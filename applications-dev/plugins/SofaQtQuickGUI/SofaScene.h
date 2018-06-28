@@ -85,6 +85,7 @@ public:
     Q_PROPERTY(sofa::qtquick::SofaComponent* selectedComponent READ selectedComponent WRITE setSelectedComponent NOTIFY selectedComponentChanged)
     Q_PROPERTY(sofa::qtquick::Manipulator* selectedManipulator READ selectedManipulator WRITE setSelectedManipulator NOTIFY selectedManipulatorChanged)
     Q_PROPERTY(QQmlListProperty<sofa::qtquick::Manipulator> manipulators READ manipulators)
+    Q_PROPERTY(bool useQt3d READ useQt3d WRITE setUseQt3d NOTIFY useQt3dChanged)
 
     Q_ENUMS(Status)
     enum Status {
@@ -132,6 +133,9 @@ public:
     bool pyQtSynchronous() const                                {return myPyQtForceSynchronous;}
     void setPyQtForceSynchronous(bool newPyQtSynchronous);
 
+    bool useQt3d() const { return myUseQt3d; }
+    void setUseQt3d(bool useQt3d);
+
     sofa::qtquick::SofaComponent* selectedComponent() const     {return mySelectedComponent;}
     void setSelectedComponent(sofa::qtquick::SofaComponent* newSelectedComponent);
 
@@ -156,6 +160,7 @@ signals:
     void pyQtForceSynchronousChanged(bool newPyQtSynchronous);
     void selectedComponentChanged(sofa::qtquick::SofaComponent* newSelectedComponent);
     void selectedManipulatorChanged(sofa::qtquick::Manipulator* newSelectedManipulator);
+    void useQt3dChanged(bool newUseQt3d);
 
 public:
     Q_INVOKABLE double radius() const;
@@ -263,6 +268,7 @@ private:
     bool                                        myDefaultAnimate;
     bool                                        myAsynchronous;
     bool                                        myPyQtForceSynchronous;
+    bool                                        myUseQt3d;
 
     sofa::simulation::Simulation*               mySofaSimulation;
     sofa::simulation::Node::SPtr                mySofaRootNode;

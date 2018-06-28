@@ -44,6 +44,7 @@
         <file>SofaWidgets/SofaDataListView.qml</file>
         <file>SofaWidgets/AffineTransformationController.qml</file>
         <file>SofaWidgets/ColorSelector.qml</file>
+        <file>SofaWidgets/Qt3DSofaViewer.qml</file>
         <file>SofaDataTypes/SofaDataType_notimplementedyet.qml</file>
         <file>SofaDataTypes/SofaDataType_0to1RatioWidget.notimplementedyet.qml</file>
         <file>SofaDataTypes/SofaDataType_array.qml</file>

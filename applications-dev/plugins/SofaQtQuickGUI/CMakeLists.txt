@@ -158,19 +158,6 @@ set(QML_FILES
     data/qml/SofaWidgets/Message.qml
 )
 
-
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaDataTypes/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaApplication/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaBasics/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaInteractors/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaManipulators/")
-list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaWidgets/")
-set(QML_IMPORT_PATH "${QML_DIRS}" CACHE STRING "Qt Creator extra qml import paths" FORCE)
-
-
-
-
 set(CONFIG_FILES
     data/config/default.ini
     data/config/classic.ini
@@ -216,6 +203,50 @@ add_definitions(${Qt5QuickControls2_DEFINITIONS})
 add_definitions(${Qt5Qml_DEFINITIONS})
 add_definitions(${Qt5Quick_DEFINITIONS})
 
+set (SOFAQTQUICK_QT3D "1" CACHE BOOL "Use Qt3d for rendering")
+
+if(SOFAQTQUICK_QT3D)
+    find_package(Qt5 COMPONENTS 3DCore 3DRender 3DExtras REQUIRED PATHS "${SOFA-EXTERNAL_QT5_PATH}")
+    find_package(SofaQt3D REQUIRED)
+
+    list(APPEND SOURCE_FILES 
+        qt3d/DrawToolQt3D.cpp
+        # qt3d/Qt3DModel.cpp
+        qt3d/SofaEntity.cpp
+    )
+
+    list(APPEND HEADER_FILES 
+        qt3d/DrawToolQt3D.h
+        # qt3d/Qt3DModel.h
+        qt3d/SofaEntity.h
+    )
+
+    # list(APPEND QML_FILES
+    #     qt3d/data/qml/qmldir
+    #     qt3d/data/qml/Qt3DSofaViewer.qml
+    # )
+    list(APPEND QML_FILES
+        data/qml/SofaWidgets/Qt3DSofaViewer.qml
+    )
+
+    # list(APPEND QRC_FILES
+    #     qt3d/data/qml/qt3dSofaQtQuickGUI_qml.qrc
+    # )
+
+    list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/qt3d/data/qml/")
+
+    add_definitions("-DSOFAQTQUICK_QT3D")
+endif()
+
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaDataTypes/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaApplication/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaBasics/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaInteractors/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaManipulators/")
+list(APPEND QML_DIRS "${CMAKE_CURRENT_LIST_DIR}/data/qml/SofaWidgets/")
+set(QML_IMPORT_PATH "${QML_DIRS}" CACHE STRING "Qt Creator extra qml import paths" FORCE)
+
 if (WIN32)
     # Does not work with Visual Studio config generation
     #if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -242,7 +273,12 @@ find_package(SofaFramework REQUIRED)
 find_package(SofaPython REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${MOC_FILES} ${SOURCE_FILES} ${QRC_FILES} ${RESOURCE_FILES} ${QML_FILES} ${CONFIG_FILES} ${PYTHON_FILES})
-target_link_libraries(${PROJECT_NAME} SofaPython SofaSimulationGraph SofaComponentBase Qt5::Core Qt5::Gui Qt5::Widgets Qt5::QuickControls2 Qt5::Qml Qt5::Quick)
+
+if(SOFAQTQUICK_QT3D)
+    target_link_libraries(${PROJECT_NAME} SofaPython SofaSimulationGraph SofaComponentBase SofaQt3D Qt5::Core Qt5::Gui Qt5::Widgets Qt5::QuickControls2 Qt5::Qml Qt5::Quick Qt5::3DCore Qt5::3DRender Qt5::3DExtras)
+else()
+    target_link_libraries(${PROJECT_NAME} SofaPython SofaSimulationGraph SofaComponentBase Qt5::Core Qt5::Gui Qt5::Widgets Qt5::QuickControls2 Qt5::Qml Qt5::Quick)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>")

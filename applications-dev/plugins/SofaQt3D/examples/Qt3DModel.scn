@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<Node name="root" gravity="0 0 0" dt="0.04">
+    <RequiredPlugin pluginName="SofaQt3D" />
+
+    <qtQt3DModel filename="mesh/liver.obj" />
+
+</Node>

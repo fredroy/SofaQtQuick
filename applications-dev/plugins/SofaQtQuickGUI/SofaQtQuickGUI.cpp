@@ -43,6 +43,10 @@ along with sofaqtquick. If not, see <http://www.gnu.org/licenses/>.
 #include "SofaViewer.h"
 #include "ControlledSofaViewer.h"
 #include "PythonConsole.h"
+#ifdef SOFAQTQUICK_QT3D
+#include <SofaQtQuickGUI/qt3d/SofaEntity.h>
+#endif // SOFAQTQUICK_QT3D
+
 using namespace sofa::qtquick;
 
 #include "Console.h"
@@ -111,6 +115,10 @@ void SofaQtQuickGUI::registerTypes(const char* /*uri*/)
     qmlRegisterType<SofaViewer>                                     ("SofaViewer"                           , versionMajor, versionMinor, "SofaViewer");
     qmlRegisterType<ControlledSofaViewer>                           ("ControlledSofaViewer"                 , versionMajor, versionMinor, "ControlledSofaViewer");
     qmlRegisterType<PythonConsole>                                  ("PythonConsole"                        , versionMajor, versionMinor, "PythonConsole");
+
+#ifdef SOFAQTQUICK_QT3D
+    qmlRegisterType<SofaEntity>                                     ("SofaEntity"                      , versionMajor, versionMinor, "SofaEntity");
+#endif // SOFAQTQUICK_QT3D
 
     // registers the C++ type in the QML system with the name "Console",
     qmlRegisterSingletonType<Console>("SofaMessageList",                    // char* uri

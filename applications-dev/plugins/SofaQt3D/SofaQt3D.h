@@ -1,0 +1,14 @@
+#ifndef INITSOFAQT3D_H
+#define INITSOFAQT3D_H
+
+
+#include <sofa/helper/system/config.h>
+
+#ifdef SOFA_BUILD_SOFAQT3D
+#define SOFA_SOFAQT3D_API SOFA_EXPORT_DYNAMIC_LIBRARY
+#else
+#define SOFA_SOFAQT3D_API  SOFA_IMPORT_DYNAMIC_LIBRARY
+#endif
+
+
+#endif // INITSOFAQT3D_H

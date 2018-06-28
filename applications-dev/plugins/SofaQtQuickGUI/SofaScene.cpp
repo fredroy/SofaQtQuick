@@ -88,6 +88,7 @@ using sofa::helper::system::FileSystem ;
 #include <QGuiApplication>
 #include <QOffscreenSurface>
 #include <GL/glut.h>
+#include <SofaQtQuickGUI/qt3d/DrawToolQt3D.h>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -121,6 +122,7 @@ SofaScene::SofaScene(QObject *parent) : QObject(parent), MutationListener(),
     myDefaultAnimate(false),
     myAsynchronous(true),
     myPyQtForceSynchronous(true),
+    myUseQt3d(false),
     mySofaSimulation(nullptr),
     myStepTimer(new QTimer(this)),
     myBases(),
@@ -286,7 +288,13 @@ bool LoaderProcess(SofaScene* sofaScene, QOffscreenSurface* offscreenSurface)
     {
         if(!visualParams->drawTool())
         {
-            visualParams->drawTool() = new sofa::core::visual::DrawToolGL();
+#ifdef SOFAQTQUICK_QT3D
+            if(sofaScene->useQt3d())
+                visualParams->drawTool() = new sofaqtquickgui::qt3d::DrawToolQt3D();
+            else
+#endif // SOFAQTQUICK_QT3D
+                visualParams->drawTool() = new sofa::core::visual::DrawToolGL();
+
             visualParams->setSupported(sofa::core::visual::API_OpenGL);
         }
 
@@ -668,6 +676,16 @@ void SofaScene::setPyQtForceSynchronous(bool newPyQtForceSynchronous)
     myPyQtForceSynchronous = newPyQtForceSynchronous;
 
     pyQtForceSynchronousChanged(newPyQtForceSynchronous);
+}
+
+void SofaScene::setUseQt3d(bool newUseQt3d)
+{
+    if (newUseQt3d == myUseQt3d)
+        return;
+
+    myUseQt3d = newUseQt3d;
+
+    useQt3dChanged(newUseQt3d);
 }
 
 void SofaScene::setSelectedComponent(sofa::qtquick::SofaComponent* newSelectedComponent)

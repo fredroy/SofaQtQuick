@@ -988,6 +988,7 @@ bool SofaApplication::DefaultMain(QApplication& app, QQmlApplicationEngine &appl
     QCommandLineOption widthOption(QStringList() << "width", "Window width", "pixels");
     QCommandLineOption heightOption(QStringList() << "height", "Window height", "pixels");
     QCommandLineOption logTimeOption(QStringList() << "log", "Log time during simulation");
+    QCommandLineOption qt3dOption(QStringList() << "qt3d", "Use experimental Qt3D backend for rendering (instead of OpenGL)");
     
     parser.addOption(sceneOption);
     parser.addOption(guiConfigOption);
@@ -996,6 +997,7 @@ bool SofaApplication::DefaultMain(QApplication& app, QQmlApplicationEngine &appl
     parser.addOption(widthOption);
     parser.addOption(heightOption);
     parser.addOption(logTimeOption);
+    parser.addOption(qt3dOption);
     
     parser.addVersionOption();
     parser.addHelpOption();
@@ -1089,6 +1091,10 @@ bool SofaApplication::DefaultMain(QApplication& app, QQmlApplicationEngine &appl
 		if(parser.isSet(animateOption) || parser.isSet(sceneOption))
         {
             SofaScene* sofaScene = object->findChild<SofaScene*>();
+            if (parser.isSet(qt3dOption))
+            {
+                sofaScene->setUseQt3d(true);
+            }
             if(parser.isSet(sceneOption))
             {
                 sofaScene->setSource(parser.value(sceneOption));

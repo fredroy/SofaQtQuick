@@ -43,11 +43,10 @@ public:
 
 private:
     /// Rendering method.
-    void internalDraw(const sofa::core::visual::VisualParams* vparams, bool transparent);
-    void drawGroups(bool transparent);
-    void drawGroup(int ig, bool transparent);
+    void internalDraw(const sofa::core::visual::VisualParams* vparams, bool transparent) {}
 
     void initGeometryGroup(const FaceGroup& faceGroup);
+    Qt3DRender::QMaterial* buildMaterial(const sofa::helper::types::Material& material);
 
     void updateBuffers();
     void createVertexBuffer();
@@ -71,7 +70,6 @@ private:
     Qt3DRender::QBuffer* m_vertexPositionBuffer, *m_vertexNormalBuffer;
     Qt3DRender::QBuffer* m_indexTriangleBuffer, *m_indexQuadBuffer, *m_indexEdgeBuffer; 
     Qt3DRender::QAttribute *m_positionAttribute, *m_normalAttribute;
-    Qt3DRender::QMaterial* m_material;
     Qt3DCore::QTransform *m_transform;
 
     std::size_t m_oldPositionSize, m_oldNormalSize, m_oldEdgeSize, m_oldTriangleSize, m_oldQuadSize;

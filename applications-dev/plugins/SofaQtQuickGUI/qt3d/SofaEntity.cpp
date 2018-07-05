@@ -24,7 +24,11 @@ void SofaEntity::setSofaScene(SofaScene* newSofaScene)
 
     mySofaScene = newSofaScene;
 
-    connect(mySofaScene, &SofaScene::stepBegin, this, &SofaEntity::updateData);
+    if(mySofaScene)
+    {
+        connect(mySofaScene, &SofaScene::stepBegin, this, &SofaEntity::updateData);
+        this->updateGraph();
+    }
 
     sofaSceneChanged(newSofaScene);
 }
@@ -33,7 +37,6 @@ void SofaEntity::updateData()
 {
     for (Qt3DModel* qt3Model : m_qt3dModelVector)
     {
-        std::cout << "caca proute" << std::endl;
         qt3Model->updateVisual();
     }
 }

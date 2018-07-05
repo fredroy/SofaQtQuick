@@ -20,8 +20,8 @@ Item {
     Rectangle {
         id: scene
         anchors.fill: parent
-        anchors.margins: 50
-        color: "darkRed"
+        anchors.margins: 5
+        color: "lightgrey"
 
         transform: Rotation {
             id: sceneRotation
@@ -70,38 +70,140 @@ Item {
                 ]
 
                 onSofaSceneChanged : {
-                   sceneRoot.updateGraph()
                 }
-
-                // Component.onCompleted: {
-                //     sceneRoot.updateGraph()
-                // }
-
-
-                // PhongMaterial {
-                //     id: material
-                // }
-
-                // TorusMesh {
-                //     id: torusMesh
-                //     radius: 5
-                //     minorRadius: 1
-                //     rings: 100
-                //     slices: 20
-                // }    
-                // Transform {
-                //     id: torusTransform
-                //     scale3D: Qt.vector3d(1.5, 1, 0.5)
-                //     rotation: fromAxisAndAngle(Qt.vector3d(1, 0, 0), 45)
-                // }
-
-                // Entity {
-                //     id: torusEntity
-
-                //     components: [ torusMesh, material, torusTransform ]
-                // }
             }
 
+        }
+    }
+    //////////////////
+
+    Rectangle {
+        id: toolPanel
+        color: "lightgrey"
+        anchors.top: toolPanelSwitch.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.topMargin: -6
+        anchors.bottomMargin: 20
+        anchors.rightMargin: -radius
+        width: 250
+        radius: 5
+        visible: false
+        opacity: 0.9
+
+        // avoid mouse event propagation through the toolpanel to the sofa viewer
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: wheel.accepted = true
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: toolPanel.radius / 2
+            anchors.rightMargin: anchors.margins - toolPanel.anchors.rightMargin
+            spacing: 2
+
+            Text {
+                Layout.fillWidth: true
+                text: "Qt3DSofaViewer parameters"
+                font.bold: true
+                color: "darkblue"
+            }
+
+            ScrollView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                Flickable {
+                    anchors.fill: parent
+                    contentHeight: panelColumn.implicitHeight
+
+                    Column {
+                        id: panelColumn
+                        anchors.fill: parent
+                        spacing: 5
+
+                        GroupBox {
+                            id: visualPanel
+                            implicitWidth: parent.width
+                            title: "Visual"
+
+                            GridLayout {
+                                anchors.fill: parent
+                                columnSpacing: 0
+                                rowSpacing: 2
+                                columns: 2
+    // background
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Background"
+                                }
+
+                                Rectangle {
+                                    Layout.preferredWidth: 48
+                                    Layout.preferredHeight: 20
+                                    Layout.alignment: Qt.AlignCenter
+                                    color: "darkgrey"
+                                    radius: 2
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: backgroundColorPicker.open()
+                                    }
+
+                                    ColorDialog {
+                                        id: backgroundColorPicker
+                                        title: "Please choose a background color"
+                                        showAlphaChannel: true
+
+                                        property color previousColor
+                                        Component.onCompleted: {
+                                            previousColor = scene.color;
+                                            color = previousColor;
+                                        }
+
+                                        onColorChanged: scene.color = color
+
+                                        onAccepted: previousColor = color
+                                        onRejected: color = previousColor
+                                    }
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        anchors.margins: 2
+                                        color: Qt.rgba(scene.color.r, scene.color.g,scene.color.b, 1.0)
+
+                                        ToolTip {
+                                            anchors.fill: parent
+                                            description: "Background color"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Image {
+        id: toolPanelSwitch
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.topMargin: 26
+        anchors.rightMargin: 3
+        source: toolPanel.visible ? "qrc:/icon/minus.png" : "qrc:/icon/plus.png"
+        width: 12
+        height: width
+        visible: true
+
+        MouseArea {
+            anchors.fill: parent
+            propagateComposedEvents: true
+            onClicked: toolPanel.visible = !toolPanel.visible
         }
     }
 

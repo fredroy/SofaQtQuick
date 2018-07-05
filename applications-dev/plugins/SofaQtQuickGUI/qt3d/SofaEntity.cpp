@@ -1,6 +1,5 @@
 #include "SofaEntity.h"
 
-#include <SofaQt3D/Qt3DModel.h>
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QAttribute>
 #include <Qt3DExtras/QPhongMaterial>
@@ -12,8 +11,6 @@ namespace sofa
 
 namespace qtquick
 {
-using sofa::qt3d::Qt3DModel;
-
 SofaEntity::SofaEntity(QNode* parent)
     : Qt3DCore::QEntity(parent)
 {
@@ -27,17 +24,28 @@ void SofaEntity::setSofaScene(SofaScene* newSofaScene)
 
     mySofaScene = newSofaScene;
 
+    connect(mySofaScene, &SofaScene::stepBegin, this, &SofaEntity::updateData);
+
     sofaSceneChanged(newSofaScene);
+}
+
+void SofaEntity::updateData()
+{
+    for (Qt3DModel* qt3Model : m_qt3dModelVector)
+    {
+        std::cout << "caca proute" << std::endl;
+        qt3Model->updateVisual();
+    }
 }
 
 void SofaEntity::updateGraph()
 {
     ////add items
-    helper::vector<Qt3DModel*> qt3dModelVector;
+    m_qt3dModelVector.clear();
     if(mySofaScene && mySofaScene->sofaRootNode())
     {
-        mySofaScene->sofaRootNode()->core::objectmodel::BaseContext::get<Qt3DModel, helper::vector<Qt3DModel*> >(&qt3dModelVector);
-        for (Qt3DModel* qt3Model : qt3dModelVector)
+        mySofaScene->sofaRootNode()->core::objectmodel::BaseContext::get<Qt3DModel, helper::vector<Qt3DModel*> >(&m_qt3dModelVector, sofa::core::objectmodel::BaseContext::SearchRoot);
+        for (Qt3DModel* qt3Model : m_qt3dModelVector)
         {
             qt3Model->qtInitVisual();
             Qt3DCore::QEntity* qt3ModelEntity = qt3Model->getEntity();

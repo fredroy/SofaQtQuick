@@ -36,7 +36,7 @@ public:
 
     void init();
     void initVisual() { Inherited::initVisual(); }
-    void updateVisual() {}
+    void updateVisual() { Inherited::updateVisual(); }
     void qtInitVisual();
 
     Qt3DCore::QEntity* getEntity() { return m_rootEntity; }

@@ -254,7 +254,6 @@ void Qt3DModel::createQuadsIndicesBuffer()
     initQuadsIndicesBuffer();
 }
 
-
 void Qt3DModel::initVertexBuffer()
 {
     unsigned positionsBufferSize, normalsBufferSize;
@@ -295,9 +294,7 @@ void Qt3DModel::initVertexBuffer()
     m_normalAttribute->setByteStride(0);
     m_normalAttribute->setCount(vnormals.size());
     m_normalAttribute->setName(Qt3DRender::QAttribute::defaultNormalAttributeName());
-
 }
-
 
 void Qt3DModel::initEdgesIndicesBuffer()
 {
@@ -311,8 +308,7 @@ void Qt3DModel::initTrianglesIndicesBuffer()
 
 void Qt3DModel::initQuadsIndicesBuffer()
 {
-    const ResizableExtVector<Quad>& quads = this->getQuads();
-    m_indexQuadBuffer->setData(reinterpret_cast<const char*>(quads.getData()));
+    updateQuadsIndicesBuffer();
 }
 
 void Qt3DModel::updateVertexBuffer()

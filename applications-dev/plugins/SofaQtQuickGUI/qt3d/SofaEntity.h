@@ -8,6 +8,7 @@
 
 #include <sofa/helper/io/Image.h>
 #include <SofaQtQuickGUI/SofaScene.h>
+#include <SofaQt3D/Qt3DModel.h>
 
 namespace sofa
 {
@@ -20,6 +21,8 @@ class SOFA_SOFAQTQUICKGUI_API SofaEntity : public Qt3DCore::QEntity
     Q_OBJECT
 
 public:
+    typedef sofa::qt3d::Qt3DModel Qt3DModel;
+
     SofaEntity(QNode* parent = 0);
     ~SofaEntity() {};
 
@@ -31,9 +34,12 @@ public:
 
 signals:
     void sofaSceneChanged(sofa::qtquick::SofaScene* newScene);
+ private slots:
+    void updateData();
 
 private:
-    SofaScene*                  mySofaScene;
+    SofaScene* mySofaScene;
+    helper::vector<Qt3DModel*> m_qt3dModelVector;
 };
 
 }

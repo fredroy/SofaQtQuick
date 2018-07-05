@@ -4,5 +4,4 @@
 
     <qtQt3DModel filename="mesh/liver.obj" color="red" />
     <qtQt3DModel filename="mesh/dragon.obj" color="green" />
-
 </Node>

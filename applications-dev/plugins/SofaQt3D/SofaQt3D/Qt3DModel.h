@@ -8,9 +8,14 @@
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DRender/QBuffer>
+#include <Qt3DRender/QMaterial>
 
 #include <Qt3DCore/QTransform>
-#include <Qt3DExtras/QPhongMaterial>
+
+namespace Qt3DExtras
+{
+    class QDiffuseSpecularMaterial;
+}
 
 namespace sofa
 {
@@ -36,17 +41,18 @@ public:
 
     void init();
     void initVisual() { Inherited::initVisual(); }
-    void updateVisual() { Inherited::updateVisual(); }
+    void updateVisual();
     void qtInitVisual();
 
     Qt3DCore::QEntity* getEntity() { return m_rootEntity; }
-
+    
 private:
     /// Rendering method.
     void internalDraw(const sofa::core::visual::VisualParams* vparams, bool transparent) {}
 
     void initGeometryGroup(const FaceGroup& faceGroup);
-    Qt3DRender::QMaterial* buildMaterial(const sofa::helper::types::Material& material);
+    Qt3DRender::QMaterial* buildMaterial(const sofa::helper::types::Material* material);
+    void setDiffuseSpecularMaterial(const sofa::helper::types::Material* mat, Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial);
 
     void updateBuffers();
     void createVertexBuffer();
@@ -73,6 +79,14 @@ private:
     Qt3DCore::QTransform *m_transform;
 
     std::size_t m_oldPositionSize, m_oldNormalSize, m_oldEdgeSize, m_oldTriangleSize, m_oldQuadSize;
+
+    sofa::core::DataTracker m_dataTracker;
+    std::map<const sofa::helper::types::Material*, Qt3DRender::QMaterial*> m_mapEntityMaterial;
+    std::vector<Qt3DCore::QEntity*> m_pointEntities;
+    std::vector<Qt3DCore::QEntity*> m_edgeEntities;
+    std::vector<Qt3DCore::QEntity*> m_triangleEntities;
+    std::vector<Qt3DCore::QEntity*> m_quadEntities;
+
 };
 
 } // namespace qt3d

@@ -8,6 +8,8 @@
 #include <sofa/helper/types/Material.h>
 #include <sofa/core/ObjectFactory.h>
 
+#include <Qt3DExtras/QDiffuseSpecularMaterial>
+
 namespace sofa
 {
 
@@ -26,6 +28,8 @@ Qt3DModel::Qt3DModel()
     , m_indexQuadBuffer(nullptr)
     , m_indexEdgeBuffer(nullptr)
 {
+    m_dataTracker.trackData(this->materials);
+    m_dataTracker.trackData(this->material);
 }
 
 void Qt3DModel::init() 
@@ -35,7 +39,6 @@ void Qt3DModel::init()
 
 void Qt3DModel::qtInitVisual()
 {
-
     m_rootEntity = new Qt3DCore::QEntity;
     m_transform = new Qt3DCore::QTransform(m_rootEntity);
     m_transform->setScale3D(QVector3D(1.0,1.0,1.0));
@@ -67,14 +70,13 @@ void Qt3DModel::qtInitVisual()
             initGeometryGroup(fg);
     }   
 }
-Qt3DRender::QMaterial* Qt3DModel::buildMaterial(const sofa::helper::types::Material& material)
-{
-    Qt3DExtras::QPhongMaterial* qtMaterial = new Qt3DExtras::QPhongMaterial();
 
-    RGBAColor ambient = material.useAmbient ? material.ambient : RGBAColor::black();
-    RGBAColor diffuse = material.useDiffuse ? material.diffuse : RGBAColor::black();
-    RGBAColor specular = material.useSpecular ? material.specular : RGBAColor::black();
-    float shininess = material.useShininess ? material.shininess : 45;
+void Qt3DModel::setDiffuseSpecularMaterial(const sofa::helper::types::Material* mat, Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial)
+{
+    RGBAColor ambient = mat->useAmbient ? mat->ambient : RGBAColor::black();
+    RGBAColor diffuse = mat->useDiffuse ? mat->diffuse : RGBAColor::black();
+    RGBAColor specular = mat->useSpecular ? mat->specular : RGBAColor::black();
+    float shininess = mat->useShininess ? mat->shininess : 45;
     if (shininess > 128.0f) shininess = 128.0f;
 
     if (shininess == 0.0f)
@@ -83,51 +85,93 @@ Qt3DRender::QMaterial* Qt3DModel::buildMaterial(const sofa::helper::types::Mater
         shininess = 1;
     }
 
-    bool isTransparent = (material.useDiffuse && material.diffuse[3] < 1.0);
+    bool isTransparent = (mat->useDiffuse && mat->diffuse[3] < 1.0);
     if (isTransparent)
     {
         ambient[3] = 0; //diffuse[3];
                         //diffuse[3] = 0;
         specular[3] = 0;
+        qtMaterial->setAlphaBlendingEnabled(true);
     }
 
     qtMaterial->setAmbient(QColor(ambient.r() * 255, ambient.g() * 255, ambient.b() * 255, ambient.a() * 255));
     qtMaterial->setDiffuse(QColor(diffuse.r() * 255, diffuse.g() * 255, diffuse.b() * 255, diffuse.a() * 255));
     qtMaterial->setSpecular(QColor(specular.r() * 255, specular.g() * 255, specular.b() * 255, specular.a() * 255));
     qtMaterial->setShininess(shininess);
+}
+
+Qt3DRender::QMaterial* Qt3DModel::buildMaterial(const sofa::helper::types::Material* mat)
+{
+    Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial = new Qt3DExtras::QDiffuseSpecularMaterial();
+    setDiffuseSpecularMaterial(mat, qtMaterial);
+    m_mapEntityMaterial[mat] = qtMaterial;
 
     return qtMaterial;
+}
+
+void Qt3DModel::updateVisual()
+{
+    //update geometry
+    Inherited::updateVisual();
+
+    //update other stuff
+    //materials
+    if (m_dataTracker.isDirty(this->materials))
+    {
+        for (const sofa::helper::types::Material& mat : this->materials.getValue())
+        {
+            Qt3DRender::QMaterial* qtMaterial = m_mapEntityMaterial[&mat];
+            Qt3DExtras::QDiffuseSpecularMaterial* dsMaterial = static_cast<Qt3DExtras::QDiffuseSpecularMaterial*> (qtMaterial);
+            if (dsMaterial)
+            {
+                this->setDiffuseSpecularMaterial(&mat, dsMaterial);
+            }
+        }
+    }
+    if (m_dataTracker.isDirty(this->material))
+    {
+        const sofa::helper::types::Material& mat = this->material.getValue();
+        Qt3DRender::QMaterial* qtMaterial = m_mapEntityMaterial[&mat];
+        Qt3DExtras::QDiffuseSpecularMaterial* dsMaterial = static_cast<Qt3DExtras::QDiffuseSpecularMaterial*> (qtMaterial);
+        if (dsMaterial)
+        {
+            this->setDiffuseSpecularMaterial(&mat, dsMaterial);
+        }
+    }
+
 }
 
 void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
 {
     const VecCoord& vertices = this->getVertices();
-    sofa::helper::types::Material material;
+    const sofa::helper::types::Material* material;
     if (faceGroup.materialId < 0)
-        material = this->material.getValue();
+        material = &this->material.getValue();
     else
-        material = this->materials.getValue()[faceGroup.materialId];
+        material = &this->materials.getValue()[faceGroup.materialId];
 
-    //if (true) // replace with test to draw point
-    //{
+    //// Points rendering
+    //Qt3DCore::QEntity* entity = new Qt3DCore::QEntity(m_rootEntity);
 
-    //    Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
-    //    Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
+    //Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
+    //Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
 
-    //    geometry->addAttribute(m_positionAttribute);
+    //geometry->addAttribute(m_positionAttribute);
 
-    //    geometryRenderer->setInstanceCount(1);
-    //    geometryRenderer->setFirstVertex(0);
-    //    geometryRenderer->setFirstInstance(0);
-    //    geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Points);
-    //    geometryRenderer->setGeometry(geometry);
-    //    geometryRenderer->setVertexCount(vertices.size());
+    //geometryRenderer->setInstanceCount(1);
+    //geometryRenderer->setFirstVertex(0);
+    //geometryRenderer->setFirstInstance(0);
+    //geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Points);
+    //geometryRenderer->setGeometry(geometry);
+    //geometryRenderer->setVertexCount(vertices.size());
     //    
+    //Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
+    //qtMaterial->setParent(entity);
 
-    //    entity->addComponent(geometryRenderer);
-    //    entity->addComponent(m_material);
-    //    entity->addComponent(m_transform);
-    //}
+    //entity->addComponent(geometryRenderer);
+    //entity->addComponent(qtMaterial);
+    //entity->addComponent(m_transform);
+    //m_pointEntities.push_back(entity);
 
     if (faceGroup.nbe > 0)
     {
@@ -162,7 +206,7 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
         entity->addComponent(geometryRenderer);
         entity->addComponent(qtMaterial);
         entity->addComponent(m_transform);
-
+        m_edgeEntities.push_back(entity);
     }
     if (faceGroup.nbt > 0)
     {
@@ -197,6 +241,7 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
         entity->addComponent(geometryRenderer);
         entity->addComponent(qtMaterial);
         entity->addComponent(m_transform);
+        m_triangleEntities.push_back(entity);
     }
     if (faceGroup.nbq > 0)
     {

@@ -42,6 +42,18 @@ Item {
                 id: sceneRoot
                 sofaScene: SofaApplication.sofaScene
 
+                    Entity {
+                        components: [
+                            DirectionalLight {
+                                id: defaultLight
+
+                                worldDirection: Qt.vector3d(0.3, -3.0, 0.0).normalized();
+                                color: "#ffffff"
+                                intensity: 1.0
+                            }
+                        ]
+                    }
+
                 Camera {
                     id: camera
                     projectionType: CameraLens.PerspectiveProjection

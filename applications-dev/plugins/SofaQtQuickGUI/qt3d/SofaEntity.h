@@ -27,19 +27,27 @@ public:
     ~SofaEntity() {};
 
     Q_PROPERTY(sofa::qtquick::SofaScene* sofaScene READ sofaScene WRITE setSofaScene NOTIFY sofaSceneChanged)
+    Q_PROPERTY(QVector3D sceneCenter READ sceneCenter WRITE setSceneCenter NOTIFY sceneCenterChanged)
     Q_INVOKABLE void updateGraph();
+    Q_INVOKABLE void updateSceneCenter();
 
     SofaScene* sofaScene() const { return mySofaScene; }
     void setSofaScene(SofaScene* newScene);
 
+    QVector3D sceneCenter() const { return mySceneCenter; }
+    void setSceneCenter(const QVector3D& newSceneCenter);
+
 signals:
     void sofaSceneChanged(sofa::qtquick::SofaScene* newScene);
+    void sceneCenterChanged();
+
  private slots:
     void updateData();
 
 private:
     SofaScene* mySofaScene;
     helper::vector<Qt3DModel*> m_qt3dModelVector;
+    QVector3D mySceneCenter;
 };
 
 }

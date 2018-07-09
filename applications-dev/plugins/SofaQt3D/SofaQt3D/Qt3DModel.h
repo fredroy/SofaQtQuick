@@ -9,6 +9,8 @@
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DRender/QBuffer>
 #include <Qt3DRender/QMaterial>
+#include <Qt3DRender/QAbstractTextureImage>
+#include <Qt3DRender/QAbstractTexture>
 
 #include <Qt3DCore/QTransform>
 
@@ -34,6 +36,11 @@ class SOFA_SOFAQT3D_API Qt3DModel : public sofa::component::visualmodel::VisualM
         QUAD = 3,
         NOPE = 4
     };
+    
+    enum TextureType {
+        DIFFUSE,
+        NORMAL
+    };
 
 public:
     Qt3DModel();
@@ -49,6 +56,9 @@ public:
 private:
     /// Rendering method.
     void internalDraw(const sofa::core::visual::VisualParams* vparams, bool transparent) {}
+
+    //utility method
+    bool findTextureFile(std::string& textureFilename);
 
     void initGeometryGroup(const FaceGroup& faceGroup);
     Qt3DRender::QMaterial* buildMaterial(const sofa::helper::types::Material* material);
@@ -70,12 +80,9 @@ private:
 
     Qt3DCore::QEntity* m_rootEntity;
 
-    //QMap<Primitive, QVector<Qt3DRender::QGeometry*> > m_meshGeometries;
-    QVector<Qt3DRender::QGeometryRenderer*> m_meshGeometryRenderers;
-
-    Qt3DRender::QBuffer* m_vertexPositionBuffer, *m_vertexNormalBuffer;
+    Qt3DRender::QBuffer* m_vertexPositionBuffer, *m_vertexNormalBuffer, *m_vertexTexcoordBuffer;
+    Qt3DRender::QAttribute *m_positionAttribute, *m_normalAttribute, *m_texcoordAttribute;
     Qt3DRender::QBuffer* m_indexTriangleBuffer, *m_indexQuadBuffer, *m_indexEdgeBuffer; 
-    Qt3DRender::QAttribute *m_positionAttribute, *m_normalAttribute;
     Qt3DCore::QTransform *m_transform;
 
     std::size_t m_oldPositionSize, m_oldNormalSize, m_oldEdgeSize, m_oldTriangleSize, m_oldQuadSize;
@@ -86,6 +93,10 @@ private:
     std::vector<Qt3DCore::QEntity*> m_edgeEntities;
     std::vector<Qt3DCore::QEntity*> m_triangleEntities;
     std::vector<Qt3DCore::QEntity*> m_quadEntities;
+    std::map<const sofa::helper::types::Material*, Qt3DRender::QAbstractTexture*> m_mapDiffuseTextureMaterial;
+    std::map<const sofa::helper::types::Material*, Qt3DRender::QAbstractTexture*> m_mapNormalTextureMaterial;
+    
+
 
 };
 

@@ -33,12 +33,26 @@ void SofaEntity::setSofaScene(SofaScene* newSofaScene)
     sofaSceneChanged(newSofaScene);
 }
 
+void SofaEntity::updateSceneCenter()
+{
+    if (mySofaScene)
+    {
+        const sofa::defaulttype::BoundingBox& bbox = mySofaScene->sofaRootNode()->f_bbox.getValue();
+        QVector3D newSceneCenter;
+        for (unsigned short i = 0; i<3; i++)
+            newSceneCenter[i] = (bbox.minBBox()[i] + bbox.maxBBox()[i])*0.5;
+        setSceneCenter(newSceneCenter);
+    }
+}
+
 void SofaEntity::updateData()
 {
     for (Qt3DModel* qt3Model : m_qt3dModelVector)
     {
         qt3Model->updateVisual();
     }
+    // update scene center
+    updateSceneCenter();
 }
 
 void SofaEntity::updateGraph()
@@ -55,6 +69,16 @@ void SofaEntity::updateGraph()
             qt3ModelEntity->setParent(this);
         }
     }
+}
+
+void SofaEntity::setSceneCenter(const QVector3D& newSceneCenter)
+{
+    if (newSceneCenter == mySceneCenter)
+        return;
+
+    mySceneCenter = newSceneCenter;
+
+    emit sceneCenterChanged();
 }
 
 } // namespace qtquick

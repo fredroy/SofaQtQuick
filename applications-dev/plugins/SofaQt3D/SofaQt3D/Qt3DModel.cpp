@@ -2,13 +2,17 @@
 
 #include <Qt3DRender/QBuffer>
 #include <Qt3DRender/QAttribute>
+#include <Qt3DRender/QTextureImage>
+#include <Qt3DRender/QTexture>
+#include <Qt3DExtras/QDiffuseSpecularMaterial>
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/defaulttype/RGBAColor.h>
 #include <sofa/helper/types/Material.h>
 #include <sofa/core/ObjectFactory.h>
 
-#include <Qt3DExtras/QDiffuseSpecularMaterial>
+#include <sofa/helper/system/FileRepository.h>
+
 
 namespace sofa
 {
@@ -62,6 +66,7 @@ void Qt3DModel::qtInitVisual()
         fg.nbt = triangles.size();
         fg.quad0 = 0;
         fg.nbq = quads.size();
+
         initGeometryGroup(fg);
     }
     else
@@ -69,6 +74,26 @@ void Qt3DModel::qtInitVisual()
         for (const FaceGroup &fg : groups)
             initGeometryGroup(fg);
     }   
+}
+
+bool Qt3DModel::findTextureFile(std::string& textureFilename)
+{
+    std::string textureFile(textureFilename);
+
+    if (!sofa::helper::system::DataRepository.findFile(textureFile, "", nullptr))
+    {
+        textureFile = this->fileMesh.getFullPath();
+        std::size_t position = textureFile.rfind("/");
+        textureFile.replace(position + 1, textureFile.length() - position, textureFilename);
+
+        if (!sofa::helper::system::DataRepository.findFile(textureFile))
+        {
+            return false;
+        }
+    }
+    textureFilename = textureFile;
+
+    return true;
 }
 
 void Qt3DModel::setDiffuseSpecularMaterial(const sofa::helper::types::Material* mat, Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial)
@@ -93,11 +118,64 @@ void Qt3DModel::setDiffuseSpecularMaterial(const sofa::helper::types::Material* 
         specular[3] = 0;
         qtMaterial->setAlphaBlendingEnabled(true);
     }
+    if (mat->useTexture)
+    {
+        if (m_mapDiffuseTextureMaterial.find(mat) == m_mapDiffuseTextureMaterial.end())
+        {
+            std::string textureFile(mat->textureFilename);
+
+            if (findTextureFile(textureFile) )
+            {
+                Qt3DRender::QTextureImage* texImage = new Qt3DRender::QTextureImage();
+                texImage->setSource(QUrl::fromLocalFile(textureFile.c_str()));
+                Qt3DRender::QAbstractTexture* tex2d = new Qt3DRender::QTexture2D();
+                tex2d->addTextureImage(texImage);
+                m_mapDiffuseTextureMaterial[mat] = tex2d;
+            }
+            else 
+                msg_error(this) << "Error (not found) while loading " << mat->textureFilename;
+        }
+        if (m_mapDiffuseTextureMaterial.find(mat) != m_mapDiffuseTextureMaterial.end())
+        {
+            qtMaterial->setDiffuse(QVariant::fromValue(m_mapDiffuseTextureMaterial[mat]));
+            qtMaterial->setTextureScale(0.100);
+        }
+        else
+        {
+            qtMaterial->setDiffuse(QColor(diffuse.r() * 255, diffuse.g() * 255, diffuse.b() * 255, diffuse.a() * 255));
+        }
+    }
+    else
+    {
+        qtMaterial->setDiffuse(QColor(diffuse.r() * 255, diffuse.g() * 255, diffuse.b() * 255, diffuse.a() * 255));
+    }
 
     qtMaterial->setAmbient(QColor(ambient.r() * 255, ambient.g() * 255, ambient.b() * 255, ambient.a() * 255));
-    qtMaterial->setDiffuse(QColor(diffuse.r() * 255, diffuse.g() * 255, diffuse.b() * 255, diffuse.a() * 255));
     qtMaterial->setSpecular(QColor(specular.r() * 255, specular.g() * 255, specular.b() * 255, specular.a() * 255));
     qtMaterial->setShininess(shininess);
+
+    if (mat->useBumpMapping)
+    {
+        if (m_mapNormalTextureMaterial.find(mat) == m_mapNormalTextureMaterial.end())
+        {
+            std::string textureFile(mat->bumpTextureFilename);
+
+            if (findTextureFile(textureFile))
+            {
+                Qt3DRender::QTextureImage* texImage = new Qt3DRender::QTextureImage();
+                texImage->setSource(QUrl::fromLocalFile(textureFile.c_str()));
+                Qt3DRender::QAbstractTexture* tex2d = new Qt3DRender::QTexture2D();
+                tex2d->addTextureImage(texImage);
+                m_mapNormalTextureMaterial[mat] = tex2d;
+            }
+            else
+                msg_error(this) << "Error (not found) while loading " << mat->bumpTextureFilename;
+        }
+        if (m_mapNormalTextureMaterial.find(mat) != m_mapNormalTextureMaterial.end())
+        {
+            qtMaterial->setNormal(QVariant::fromValue(m_mapNormalTextureMaterial[mat]));
+        }
+    }
 }
 
 Qt3DRender::QMaterial* Qt3DModel::buildMaterial(const sofa::helper::types::Material* mat)
@@ -138,6 +216,7 @@ void Qt3DModel::updateVisual()
             this->setDiffuseSpecularMaterial(&mat, dsMaterial);
         }
     }
+    m_dataTracker.clean();
 
 }
 
@@ -191,6 +270,7 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
 
         geometry->addAttribute(m_positionAttribute);
         geometry->addAttribute(m_normalAttribute);
+        geometry->addAttribute(m_texcoordAttribute);
         geometry->addAttribute(indexAttribute);
 
         geometryRenderer->setInstanceCount(1);
@@ -226,6 +306,7 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
 
         geometry->addAttribute(m_positionAttribute);
         geometry->addAttribute(m_normalAttribute);
+        geometry->addAttribute(m_texcoordAttribute);
         geometry->addAttribute(indexAttribute);
 
         geometryRenderer->setInstanceCount(1);
@@ -276,6 +357,7 @@ void Qt3DModel::createVertexBuffer()
 {
     m_vertexPositionBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, m_rootEntity);
     m_vertexNormalBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, m_rootEntity);
+    m_vertexTexcoordBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, m_rootEntity);
     initVertexBuffer();
 
 }
@@ -301,24 +383,10 @@ void Qt3DModel::createQuadsIndicesBuffer()
 
 void Qt3DModel::initVertexBuffer()
 {
-    unsigned positionsBufferSize, normalsBufferSize;
-    unsigned textureCoordsBufferSize = 0, tangentsBufferSize = 0, bitangentsBufferSize = 0;
     const VecCoord& vertices = this->getVertices();
     const VecCoord& vnormals = this->getVnormals();
     const VecTexCoord& vtexcoords = this->getVtexcoords();
-    const VecCoord& vtangents = this->getVtangents();
-    const VecCoord& vbitangents = this->getVbitangents();
-    bool hasTangents = vtangents.size() && vbitangents.size();
-
-    positionsBufferSize = (vertices.size() * sizeof(vertices[0]));
-    normalsBufferSize = (vnormals.size() * sizeof(vnormals[0]));
-
-    unsigned int totalSize = positionsBufferSize + normalsBufferSize + textureCoordsBufferSize +
-        tangentsBufferSize + bitangentsBufferSize;
-    QByteArray qbaPosition(reinterpret_cast<const char*>(vertices.getData()), positionsBufferSize);
-    m_vertexPositionBuffer->setData(qbaPosition);
-    QByteArray qbaNormal(reinterpret_cast<const char*>(vnormals.getData()), normalsBufferSize);
-    m_vertexNormalBuffer->setData(qbaNormal);
+    updateVertexBuffer();
 
     m_positionAttribute = new Qt3DRender::QAttribute();
     m_positionAttribute->setAttributeType(Qt3DRender::QAttribute::VertexAttribute);
@@ -339,6 +407,16 @@ void Qt3DModel::initVertexBuffer()
     m_normalAttribute->setByteStride(0);
     m_normalAttribute->setCount(vnormals.size());
     m_normalAttribute->setName(Qt3DRender::QAttribute::defaultNormalAttributeName());
+
+    m_texcoordAttribute = new Qt3DRender::QAttribute();
+    m_texcoordAttribute->setAttributeType(Qt3DRender::QAttribute::VertexAttribute);
+    m_texcoordAttribute->setBuffer(m_vertexTexcoordBuffer);
+    m_texcoordAttribute->setDataType(Qt3DRender::QAttribute::Float);
+    m_texcoordAttribute->setDataSize(2);
+    m_texcoordAttribute->setByteOffset(0);
+    m_texcoordAttribute->setByteStride(0);
+    m_texcoordAttribute->setCount(vtexcoords.size());
+    m_texcoordAttribute->setName(Qt3DRender::QAttribute::defaultTextureCoordinateAttributeName());
 }
 
 void Qt3DModel::initEdgesIndicesBuffer()
@@ -361,21 +439,20 @@ void Qt3DModel::updateVertexBuffer()
     const VecCoord& vertices = this->getVertices();
     const VecCoord& vnormals = this->getVnormals();
     const VecTexCoord& vtexcoords = this->getVtexcoords();
-    const VecCoord& vtangents = this->getVtangents();
-    const VecCoord& vbitangents = this->getVbitangents();
-    bool hasTangents = vtangents.size() && vbitangents.size();
 
     unsigned positionsBufferSize, normalsBufferSize;
-    unsigned textureCoordsBufferSize = 0, tangentsBufferSize = 0, bitangentsBufferSize = 0;
+    unsigned textureCoordsBufferSize = 0;
 
     positionsBufferSize = (vertices.size() * sizeof(vertices[0]));
     normalsBufferSize = (vnormals.size() * sizeof(vnormals[0]));
+    textureCoordsBufferSize = (vtexcoords.size() * sizeof(vtexcoords[0]));
 
     QByteArray qbaPosition(reinterpret_cast<const char*>(vertices.getData()), positionsBufferSize);
     m_vertexPositionBuffer->setData(qbaPosition);
     QByteArray qbaNormal(reinterpret_cast<const char*>(vnormals.getData()), normalsBufferSize);
     m_vertexNormalBuffer->setData(qbaNormal);
-
+    QByteArray qbaTexcoord(reinterpret_cast<const char*>(vtexcoords.getData()), textureCoordsBufferSize);
+    m_vertexTexcoordBuffer->setData(qbaTexcoord);
 }
 
 void Qt3DModel::updateEdgesIndicesBuffer()

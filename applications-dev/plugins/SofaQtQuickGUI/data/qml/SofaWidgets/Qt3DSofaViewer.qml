@@ -57,6 +57,7 @@ Item {
                         linearSpeed : 100
                         lookSpeed : 1000
                         camera: camera
+
                     }
 
                 components: [
@@ -69,7 +70,9 @@ Item {
                     InputSettings { }
                 ]
 
-                onSofaSceneChanged : {
+                Component.onCompleted : {
+                    sceneRoot.updateSceneCenter()
+                    camera.viewCenter = sceneRoot.sceneCenter
                 }
             }
 

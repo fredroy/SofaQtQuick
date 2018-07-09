@@ -54,35 +54,42 @@ public:
     Qt3DCore::QEntity* getEntity() { return m_rootEntity; }
     
 private:
+
+    bool ready() { return m_isReady; }
+    void setReady(bool ready) { m_isReady = ready; }
+    bool m_isReady;
+
     /// Rendering method.
     void internalDraw(const sofa::core::visual::VisualParams* vparams, bool transparent) {}
 
     //utility method
     bool findTextureFile(std::string& textureFilename);
 
-    void initGeometryGroup(const FaceGroup& faceGroup);
+    void createPointEntity();
+    void createWireframeEntity();
+    void createGeometryEntity(const FaceGroup& faceGroup);
     Qt3DRender::QMaterial* buildMaterial(const sofa::helper::types::Material* material);
     void setDiffuseSpecularMaterial(const sofa::helper::types::Material* mat, Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial);
+    void setGeometriesEnabled(bool enabled);
 
     void updateBuffers();
     void createVertexBuffer();
+    void initVertexBuffer();
     void createEdgesIndicesBuffer();
     void createTrianglesIndicesBuffer();
     void createQuadsIndicesBuffer();
-    void initVertexBuffer();
-    void initEdgesIndicesBuffer();
-    void initTrianglesIndicesBuffer();
-    void initQuadsIndicesBuffer();
+    void createWireframeIndicesBuffer();
     void updateVertexBuffer();
     void updateEdgesIndicesBuffer();
     void updateTrianglesIndicesBuffer();
     void updateQuadsIndicesBuffer();
+    void updateWireframeIndicesBuffer();
 
     Qt3DCore::QEntity* m_rootEntity;
 
     Qt3DRender::QBuffer* m_vertexPositionBuffer, *m_vertexNormalBuffer, *m_vertexTexcoordBuffer;
     Qt3DRender::QAttribute *m_positionAttribute, *m_normalAttribute, *m_texcoordAttribute;
-    Qt3DRender::QBuffer* m_indexTriangleBuffer, *m_indexQuadBuffer, *m_indexEdgeBuffer; 
+    Qt3DRender::QBuffer* m_indexTriangleBuffer, *m_indexQuadBuffer, *m_indexEdgeBuffer, *m_indexWireframeBuffer;
     Qt3DCore::QTransform *m_transform;
 
     std::size_t m_oldPositionSize, m_oldNormalSize, m_oldEdgeSize, m_oldTriangleSize, m_oldQuadSize;
@@ -93,6 +100,9 @@ private:
     std::vector<Qt3DCore::QEntity*> m_edgeEntities;
     std::vector<Qt3DCore::QEntity*> m_triangleEntities;
     std::vector<Qt3DCore::QEntity*> m_quadEntities;
+    Qt3DCore::QEntity* m_pointEntity;
+    Qt3DCore::QEntity* m_wireframeEntity;
+
     std::map<const sofa::helper::types::Material*, Qt3DRender::QAbstractTexture*> m_mapDiffuseTextureMaterial;
     std::map<const sofa::helper::types::Material*, Qt3DRender::QAbstractTexture*> m_mapNormalTextureMaterial;
     

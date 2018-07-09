@@ -4,6 +4,7 @@
 #include <Qt3DRender/QAttribute>
 #include <Qt3DRender/QTextureImage>
 #include <Qt3DRender/QTexture>
+#include <Qt3DRender/QLineWidth>
 #include <Qt3DExtras/QDiffuseSpecularMaterial>
 
 #include <sofa/core/visual/VisualParams.h>
@@ -27,10 +28,12 @@ using namespace sofa::component::visualmodel;
 
 Qt3DModel::Qt3DModel()
     : Inherited()
+    , m_isReady(false)
     , m_vertexPositionBuffer(nullptr)
     , m_indexTriangleBuffer(nullptr)
     , m_indexQuadBuffer(nullptr)
     , m_indexEdgeBuffer(nullptr)
+    , m_indexWireframeBuffer(nullptr)
 {
     m_dataTracker.trackData(this->materials);
     m_dataTracker.trackData(this->material);
@@ -67,13 +70,18 @@ void Qt3DModel::qtInitVisual()
         fg.quad0 = 0;
         fg.nbq = quads.size();
 
-        initGeometryGroup(fg);
+        createGeometryEntity(fg);
     }
     else
     {
         for (const FaceGroup &fg : groups)
-            initGeometryGroup(fg);
+            createGeometryEntity(fg);
     }   
+
+    createPointEntity();
+    createWireframeEntity();
+
+    setReady(true);
 }
 
 bool Qt3DModel::findTextureFile(std::string& textureFilename)
@@ -187,17 +195,50 @@ Qt3DRender::QMaterial* Qt3DModel::buildMaterial(const sofa::helper::types::Mater
     return qtMaterial;
 }
 
+void Qt3DModel::setGeometriesEnabled(bool enabled)
+{
+    for (Qt3DCore::QEntity* e : m_pointEntities)
+    {
+        e->setEnabled(enabled);
+    }
+    for (Qt3DCore::QEntity* e : m_edgeEntities)
+    {
+        e->setEnabled(enabled);
+    }
+    for (Qt3DCore::QEntity* e : m_triangleEntities)
+    {
+        e->setEnabled(enabled);
+    }
+    for (Qt3DCore::QEntity* e : m_quadEntities)
+    {
+        e->setEnabled(enabled);
+    }
+}
+
 void Qt3DModel::updateVisual()
 {
-    //update geometry
-    Inherited::updateVisual();
-
-    //update other stuff
-    //materials
-    if (m_dataTracker.isDirty(this->materials))
+    if(ready())
     {
-        for (const sofa::helper::types::Material& mat : this->materials.getValue())
+        //update geometry
+        Inherited::updateVisual();
+
+        //update other stuff
+        //materials
+        if (m_dataTracker.isDirty(this->materials))
         {
+            for (const sofa::helper::types::Material& mat : this->materials.getValue())
+            {
+                Qt3DRender::QMaterial* qtMaterial = m_mapEntityMaterial[&mat];
+                Qt3DExtras::QDiffuseSpecularMaterial* dsMaterial = static_cast<Qt3DExtras::QDiffuseSpecularMaterial*> (qtMaterial);
+                if (dsMaterial)
+                {
+                    this->setDiffuseSpecularMaterial(&mat, dsMaterial);
+                }
+            }
+        }
+        if (m_dataTracker.isDirty(this->material))
+        {
+            const sofa::helper::types::Material& mat = this->material.getValue();
             Qt3DRender::QMaterial* qtMaterial = m_mapEntityMaterial[&mat];
             Qt3DExtras::QDiffuseSpecularMaterial* dsMaterial = static_cast<Qt3DExtras::QDiffuseSpecularMaterial*> (qtMaterial);
             if (dsMaterial)
@@ -205,22 +246,100 @@ void Qt3DModel::updateVisual()
                 this->setDiffuseSpecularMaterial(&mat, dsMaterial);
             }
         }
-    }
-    if (m_dataTracker.isDirty(this->material))
-    {
-        const sofa::helper::types::Material& mat = this->material.getValue();
-        Qt3DRender::QMaterial* qtMaterial = m_mapEntityMaterial[&mat];
-        Qt3DExtras::QDiffuseSpecularMaterial* dsMaterial = static_cast<Qt3DExtras::QDiffuseSpecularMaterial*> (qtMaterial);
-        if (dsMaterial)
+        m_dataTracker.clean();
+
+        //states
+        sofa::core::visual::VisualParams* vparams = sofa::core::visual::VisualParams::defaultInstance();
+        if(vparams->displayFlags().getShowWireFrame())
         {
-            this->setDiffuseSpecularMaterial(&mat, dsMaterial);
+            m_wireframeEntity->setEnabled(true);
+            setGeometriesEnabled(false);
+        }
+        else
+        {
+            m_wireframeEntity->setEnabled(false);
+            setGeometriesEnabled(true);
         }
     }
-    m_dataTracker.clean();
 
 }
 
-void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
+void Qt3DModel::createPointEntity()
+{
+    const VecCoord& vertices = this->getVertices();
+
+    Qt3DCore::QEntity* entity = new Qt3DCore::QEntity(m_rootEntity);
+
+    Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
+    Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
+
+    geometry->addAttribute(m_positionAttribute);
+
+    geometryRenderer->setInstanceCount(1);
+    geometryRenderer->setFirstVertex(0);
+    geometryRenderer->setFirstInstance(0);
+    geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Points);
+    geometryRenderer->setGeometry(geometry);
+    geometryRenderer->setVertexCount(vertices.size());
+
+    Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial = new Qt3DExtras::QDiffuseSpecularMaterial();
+    qtMaterial->setParent(entity);
+
+    entity->addComponent(geometryRenderer);
+    entity->addComponent(qtMaterial);
+    entity->addComponent(m_transform);
+
+    m_pointEntity = entity; 
+    m_pointEntity->setEnabled(false);
+}
+
+void Qt3DModel::createWireframeEntity()
+{
+    const VecCoord& vertices = this->getVertices();
+    const ResizableExtVector<Edge>& edges = this->getEdges();
+    const ResizableExtVector<Triangle>& triangles = this->getTriangles();
+    const ResizableExtVector<Quad>& quads = this->getQuads();
+
+    unsigned int count = (edges.size() + triangles.size() * 3 + quads.size() * 4) * 2;
+
+    Qt3DCore::QEntity* entity = new Qt3DCore::QEntity(m_rootEntity);
+
+    Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
+    Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
+
+    Qt3DRender::QAttribute *indexAttribute = new Qt3DRender::QAttribute();
+    indexAttribute->setAttributeType(Qt3DRender::QAttribute::IndexAttribute);
+    indexAttribute->setBuffer(m_indexWireframeBuffer);
+    indexAttribute->setDataType(Qt3DRender::QAttribute::UnsignedInt);
+    indexAttribute->setDataSize(1);
+    indexAttribute->setByteOffset(0);
+    indexAttribute->setByteStride(0);
+    indexAttribute->setCount(count);
+
+    geometry->addAttribute(m_positionAttribute);
+    geometry->addAttribute(indexAttribute);
+
+    geometryRenderer->setInstanceCount(1);
+    geometryRenderer->setFirstVertex(0);
+    geometryRenderer->setFirstInstance(0);
+    geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Lines);
+    geometryRenderer->setGeometry(geometry);
+    geometryRenderer->setVertexCount(count);
+
+    Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial = new Qt3DExtras::QDiffuseSpecularMaterial();
+    qtMaterial->setParent(entity);
+    //Qt3DRender::QLineWidth* qtLineWidth = new Qt3DRender::QLineWidth(entity);
+    //qtLineWidth->setValue(10.0);
+
+    entity->addComponent(geometryRenderer);
+    entity->addComponent(qtMaterial);
+    entity->addComponent(m_transform);
+
+    m_wireframeEntity = entity;
+    m_wireframeEntity->setEnabled(false);
+}
+
+void Qt3DModel::createGeometryEntity(const FaceGroup& faceGroup)
 {
     const VecCoord& vertices = this->getVertices();
     const sofa::helper::types::Material* material;
@@ -228,29 +347,6 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
         material = &this->material.getValue();
     else
         material = &this->materials.getValue()[faceGroup.materialId];
-
-    //// Points rendering
-    //Qt3DCore::QEntity* entity = new Qt3DCore::QEntity(m_rootEntity);
-
-    //Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
-    //Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
-
-    //geometry->addAttribute(m_positionAttribute);
-
-    //geometryRenderer->setInstanceCount(1);
-    //geometryRenderer->setFirstVertex(0);
-    //geometryRenderer->setFirstInstance(0);
-    //geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Points);
-    //geometryRenderer->setGeometry(geometry);
-    //geometryRenderer->setVertexCount(vertices.size());
-    //    
-    //Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
-    //qtMaterial->setParent(entity);
-
-    //entity->addComponent(geometryRenderer);
-    //entity->addComponent(qtMaterial);
-    //entity->addComponent(m_transform);
-    //m_pointEntities.push_back(entity);
 
     if (faceGroup.nbe > 0)
     {
@@ -375,20 +471,26 @@ void Qt3DModel::createVertexBuffer()
 void Qt3DModel::createEdgesIndicesBuffer()
 {
     m_indexEdgeBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::IndexBuffer, m_rootEntity);
-    initEdgesIndicesBuffer();
+    updateEdgesIndicesBuffer();
 }
 
 void Qt3DModel::createTrianglesIndicesBuffer()
 {
     m_indexTriangleBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::IndexBuffer, m_rootEntity);
-    initTrianglesIndicesBuffer();
+    updateTrianglesIndicesBuffer();
 }
 
 
 void Qt3DModel::createQuadsIndicesBuffer()
 {
     m_indexQuadBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::IndexBuffer, m_rootEntity);
-    initQuadsIndicesBuffer();
+    updateQuadsIndicesBuffer();
+}
+
+void Qt3DModel::createWireframeIndicesBuffer()
+{
+    m_indexWireframeBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::IndexBuffer, m_rootEntity);
+    updateWireframeIndicesBuffer();
 }
 
 void Qt3DModel::initVertexBuffer()
@@ -427,21 +529,6 @@ void Qt3DModel::initVertexBuffer()
     m_texcoordAttribute->setByteStride(0);
     m_texcoordAttribute->setCount(vtexcoords.size());
     m_texcoordAttribute->setName(Qt3DRender::QAttribute::defaultTextureCoordinateAttributeName());
-}
-
-void Qt3DModel::initEdgesIndicesBuffer()
-{
-    updateEdgesIndicesBuffer();
-}
-
-void Qt3DModel::initTrianglesIndicesBuffer()
-{
-    updateTrianglesIndicesBuffer();
-}
-
-void Qt3DModel::initQuadsIndicesBuffer()
-{
-    updateQuadsIndicesBuffer();
 }
 
 void Qt3DModel::updateVertexBuffer()
@@ -494,6 +581,34 @@ void Qt3DModel::updateQuadsIndicesBuffer()
     m_indexQuadBuffer->setData(qbaQuads);
 }
 
+
+void Qt3DModel::updateWireframeIndicesBuffer()
+{
+    const ResizableExtVector<Edge>& edges = this->getEdges();
+    const ResizableExtVector<Triangle>& triangles = this->getTriangles();
+    const ResizableExtVector<Quad>& quads = this->getQuads();
+
+    ResizableExtVector<Edge> wireframe;
+    for (const Edge& e : edges)
+        wireframe.push_back(e);
+    for (const Triangle& t : triangles)
+    {
+        wireframe.push_back(Edge(t[0], t[1]));
+        wireframe.push_back(Edge(t[1], t[2]));
+        wireframe.push_back(Edge(t[2], t[0]));
+    }
+    for (const Quad& q : quads)
+    {
+        wireframe.push_back(Edge(q[0], q[1]));
+        wireframe.push_back(Edge(q[1], q[2]));
+        wireframe.push_back(Edge(q[2], q[3]));
+        wireframe.push_back(Edge(q[3], q[0]));
+    }
+
+    QByteArray qbaWireframe(reinterpret_cast<const char*>(wireframe.getData()), wireframe.size() * 2 * sizeof(unsigned int));
+    m_indexWireframeBuffer->setData(qbaWireframe);
+}
+
 void Qt3DModel::updateBuffers()
 {
     const ResizableExtVector<Edge>& edges = this->getEdges();
@@ -518,21 +633,19 @@ void Qt3DModel::updateBuffers()
         //Quads indices
         if (quads.size() > 0)
             createQuadsIndicesBuffer();
+
+        createWireframeIndicesBuffer();
     }
-    //Update VBO & IBO
+    // Update VBO & IBO
+    // TODO: Change topological change detection
     else
     {
-        if (m_oldPositionSize != vertices.size() ||
-            m_oldNormalSize != normals.size())
-            initVertexBuffer();
-        else
-            updateVertexBuffer();
+        updateVertexBuffer();
+
         //Indices
         //Edges
         if (m_indexEdgeBuffer != nullptr)
             if (m_oldEdgeSize != edges.size())
-                initEdgesIndicesBuffer();
-            else
                 updateEdgesIndicesBuffer();
         else if (edges.size() > 0)
             createEdgesIndicesBuffer();
@@ -540,8 +653,6 @@ void Qt3DModel::updateBuffers()
         //Triangles
         if (m_indexTriangleBuffer != nullptr)
             if (m_oldTriangleSize != triangles.size())
-                initTrianglesIndicesBuffer();
-            else
                 updateTrianglesIndicesBuffer();
         else if (triangles.size() > 0)
             createTrianglesIndicesBuffer();
@@ -549,11 +660,17 @@ void Qt3DModel::updateBuffers()
         //Quads
         if (m_indexQuadBuffer != nullptr)
             if (m_oldQuadSize != quads.size())
-                initQuadsIndicesBuffer();
-            else
                 updateQuadsIndicesBuffer();
         else if (quads.size() > 0)
             createQuadsIndicesBuffer();
+
+        //Wireframe
+        if (m_indexWireframeBuffer != nullptr)
+            if(m_oldEdgeSize != edges.size() || m_oldTriangleSize != triangles.size() || m_oldQuadSize != quads.size() )
+                updateWireframeIndicesBuffer();
+        else 
+            createWireframeIndicesBuffer();
+
     }
     m_oldPositionSize = vertices.size();
     m_oldNormalSize = normals.size();

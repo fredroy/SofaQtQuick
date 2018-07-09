@@ -1,0 +1,11 @@
+newmtl FloorMaterial
+Ns 5
+Ka 0.300000 0.300000 0.300000
+Kd 0.600000 0.600000 0.600000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd snakeskin_diffuse.png
+b snakeskin_normal.png
+

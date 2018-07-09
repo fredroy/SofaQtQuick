@@ -138,7 +138,7 @@ void Qt3DModel::setDiffuseSpecularMaterial(const sofa::helper::types::Material* 
         if (m_mapDiffuseTextureMaterial.find(mat) != m_mapDiffuseTextureMaterial.end())
         {
             qtMaterial->setDiffuse(QVariant::fromValue(m_mapDiffuseTextureMaterial[mat]));
-            qtMaterial->setTextureScale(0.100);
+            qtMaterial->setTextureScale(1.0);
         }
         else
         {
@@ -326,29 +326,39 @@ void Qt3DModel::initGeometryGroup(const FaceGroup& faceGroup)
     }
     if (faceGroup.nbq > 0)
     {
-        //No quad renderer !!
-        /// TODO: convert quad into 2 triangles
+        Qt3DCore::QEntity* entity = new Qt3DCore::QEntity(m_rootEntity);
 
-        //Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(m_rootEntity);
-        //Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(m_meshGeometryRenderers[Primitive::QUAD]);
+        Qt3DRender::QGeometryRenderer* geometryRenderer = new Qt3DRender::QGeometryRenderer(entity);
+        Qt3DRender::QGeometry* geometry = new Qt3DRender::QGeometry(entity);
 
-        //Qt3DRender::QAttribute *indexAttribute = new Qt3DRender::QAttribute();
-        //indexAttribute->setAttributeType(Qt3DRender::QAttribute::IndexAttribute);
-        //indexAttribute->setBuffer(m_indexQuadBuffer);
-        //indexAttribute->setDataType(Qt3DRender::QAttribute::UnsignedShort);
-        //indexAttribute->setDataSize(1);
-        //indexAttribute->setByteOffset(faceGroup.quad0);
-        //indexAttribute->setByteStride(0);
-        //indexAttribute->setCount(faceGroup.nbq * 2);
+        Qt3DRender::QAttribute *indexAttribute = new Qt3DRender::QAttribute();
+        indexAttribute->setAttributeType(Qt3DRender::QAttribute::IndexAttribute);
+        indexAttribute->setBuffer(m_indexQuadBuffer);
+        indexAttribute->setDataType(Qt3DRender::QAttribute::UnsignedInt);
+        indexAttribute->setDataSize(1);
+        indexAttribute->setByteOffset(faceGroup.quad0 * 2);
+        indexAttribute->setByteStride(0);
+        indexAttribute->setCount(faceGroup.nbq * 3 * 2);
 
-        //geometry->addAttribute(m_positionAttribute);
-        //geometry->addAttribute(m_normalAttribute);
-        //geometry->addAttribute(indexAttribute);
+        geometry->addAttribute(m_positionAttribute);
+        geometry->addAttribute(m_normalAttribute);
+        geometry->addAttribute(m_texcoordAttribute);
+        geometry->addAttribute(indexAttribute);
 
-        //geometryRenderer->setInstanceCount(1);
-        //geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Quad);
-        //geometryRenderer->setGeometry(geometry);
-        //m_meshGeometryRenderers.push_back(geometryRenderer);
+        geometryRenderer->setInstanceCount(1);
+        geometryRenderer->setFirstVertex(0);
+        geometryRenderer->setFirstInstance(0);
+        geometryRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Triangles);
+        geometryRenderer->setGeometry(geometry);
+        geometryRenderer->setVertexCount(faceGroup.nbq * 3 * 2);
+
+        Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
+        qtMaterial->setParent(entity);
+
+        entity->addComponent(geometryRenderer);
+        entity->addComponent(qtMaterial);
+        entity->addComponent(m_transform);
+        m_triangleEntities.push_back(entity);
 
     }
 }
@@ -472,7 +482,15 @@ void Qt3DModel::updateTrianglesIndicesBuffer()
 void Qt3DModel::updateQuadsIndicesBuffer()
 {
     const ResizableExtVector<Quad>& quads = this->getQuads();
-    QByteArray qbaQuads(reinterpret_cast<const char*>(quads.getData()), quads.size() * 4 * sizeof(unsigned int));
+    //convert to triangles
+    ResizableExtVector<Triangle> quadTriangles;
+    for (const Quad& q : quads)
+    {
+        quadTriangles.push_back(Triangle(q[0], q[1], q[2]));
+        quadTriangles.push_back(Triangle(q[2], q[3], q[0]));
+    }
+
+    QByteArray qbaQuads(reinterpret_cast<const char*>(quadTriangles.getData()), quadTriangles.size() * 3 * sizeof(unsigned int));
     m_indexQuadBuffer->setData(qbaQuads);
 }
 

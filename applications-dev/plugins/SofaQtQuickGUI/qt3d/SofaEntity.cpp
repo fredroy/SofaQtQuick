@@ -2,9 +2,11 @@
 
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QAttribute>
-#include <Qt3DExtras/QPhongMaterial>
-#include <Qt3DExtras/QTorusMesh>
 #include <Qt3DCore/QTransform>
+
+#include <sofa/core/visual/VisualParams.h>
+#include <SofaQtQuickGUI/qt3d/DrawToolQt3D.h>
+#include <SofaQtQuickGUI/helper/QMathExtensions.h>
 
 namespace sofa
 {
@@ -13,6 +15,8 @@ namespace qtquick
 {
 SofaEntity::SofaEntity(QNode* parent)
     : Qt3DCore::QEntity(parent)
+    , m_parent(nullptr)
+    , m_camera(nullptr)
 {
 
 }
@@ -28,6 +32,7 @@ void SofaEntity::setSofaScene(SofaScene* newSofaScene)
     {
         connect(mySofaScene, &SofaScene::stepBegin, this, &SofaEntity::updateData);
         this->updateGraph();
+        this->setupVisualParams();
     }
 
     sofaSceneChanged(newSofaScene);
@@ -51,8 +56,62 @@ void SofaEntity::updateData()
     {
         qt3Model->updateVisual();
     }
-    // update scene center
+
     updateSceneCenter();
+
+    updateVisualParams();
+}
+
+void SofaEntity::updateVisualParams()
+{
+    sofa::core::visual::VisualParams* vparams = sofa::core::visual::VisualParams::defaultInstance();
+    if (vparams)
+    {
+
+        vparams->sceneBBox() = mySofaScene->sofaRootNode()->f_bbox.getValue();
+
+        if (m_camera)
+        {
+            double modelviewMatrix[16], projectionMatrix[16];
+            QMatrix4x4 qtModelViewMAtrix = m_camera->viewMatrix();
+            for (unsigned int i = 0; i < 16; i++)
+                modelviewMatrix[i] = qtModelViewMAtrix.constData()[i];
+            QMatrix4x4 qtProjectionMatrix = m_camera->projectionMatrix();
+            for (unsigned int i = 0; i < 16; i++)
+                projectionMatrix[i] = qtProjectionMatrix.constData()[i];
+
+            vparams->setProjectionMatrix(projectionMatrix);
+            vparams->setModelViewMatrix(modelviewMatrix);
+
+        }
+        if(m_parent)
+            vparams->viewport() = sofa::helper::fixed_array<int, 4>(0, 0, m_parent->width(), m_parent->height());
+    }
+}
+void SofaEntity::setupVisualParams()
+{
+    sofa::core::visual::VisualParams* vparams = sofa::core::visual::VisualParams::defaultInstance();
+    if (vparams)
+    {
+        if (!vparams->drawTool())
+        {
+            vparams->drawTool() = new sofaqtquickgui::qt3d::DrawToolQt3D();
+            vparams->setSupported(sofa::core::visual::API_OpenGL); //change this
+        }
+        // get Camera context
+        m_camera = nullptr;
+        for (QNode* n : this->childNodes())
+        {
+            m_camera = qobject_cast<Qt3DRender::QCamera*>(n);
+            if (m_camera)
+                break;
+        }
+        //get Scene3D context
+        m_parent = nullptr;
+        m_parent = qobject_cast<QQuickItem*>(this->parent());
+
+        updateVisualParams();
+    }
 }
 
 void SofaEntity::updateGraph()

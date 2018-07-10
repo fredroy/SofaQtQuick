@@ -3,8 +3,9 @@
 
 #include "SofaQtQuickGUI.h"
 
-#include <QtQuick/QQuickFramebufferObject>
+#include <QQuickItem>
 #include <Qt3DCore/QEntity>
+#include <Qt3DRender/QCamera>
 
 #include <sofa/helper/io/Image.h>
 #include <SofaQtQuickGUI/SofaScene.h>
@@ -30,6 +31,8 @@ public:
     Q_PROPERTY(QVector3D sceneCenter READ sceneCenter WRITE setSceneCenter NOTIFY sceneCenterChanged)
     Q_INVOKABLE void updateGraph();
     Q_INVOKABLE void updateSceneCenter();
+    Q_INVOKABLE void updateVisualParams();
+    Q_INVOKABLE void setupVisualParams();
 
     SofaScene* sofaScene() const { return mySofaScene; }
     void setSofaScene(SofaScene* newScene);
@@ -48,6 +51,8 @@ private:
     SofaScene* mySofaScene;
     helper::vector<Qt3DModel*> m_qt3dModelVector;
     QVector3D mySceneCenter;
+    QQuickItem* m_parent;
+    Qt3DRender::QCamera* m_camera;
 };
 
 }

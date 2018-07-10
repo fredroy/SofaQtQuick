@@ -53,6 +53,8 @@ void Qt3DModel::qtInitVisual()
 
     this->updateBuffers();
 
+    this->createMaterials();
+
     sofa::helper::ReadAccessor< Data< helper::vector<FaceGroup> > > groups = this->groups;
     if (groups.empty())
     {
@@ -82,6 +84,21 @@ void Qt3DModel::qtInitVisual()
     createWireframeEntity();
 
     setReady(true);
+}
+
+void Qt3DModel::createMaterials()
+{
+    m_mapMaterials.clear();
+    //default material
+    const sofa::helper::types::Material* ptrMaterial = &this->material.getValue();
+    m_mapMaterials[ptrMaterial] = buildMaterial(ptrMaterial);
+    //other materials (e.g from mtl)
+    const sofa::helper::vector<sofa::helper::types::Material>& vecMaterials = this->materials.getValue();
+    for (std::size_t i = 0 ; i <vecMaterials.size() ; i++)
+    {
+        const sofa::helper::types::Material* ptrMaterial = &vecMaterials[i];
+        m_mapMaterials[ptrMaterial] = buildMaterial(ptrMaterial);
+    }
 }
 
 bool Qt3DModel::findTextureFile(std::string& textureFilename)
@@ -250,6 +267,7 @@ void Qt3DModel::updateVisual()
 
         //states
         sofa::core::visual::VisualParams* vparams = sofa::core::visual::VisualParams::defaultInstance();
+        //Does not work
         if(vparams->displayFlags().getShowWireFrame())
         {
             m_wireframeEntity->setEnabled(true);
@@ -283,11 +301,9 @@ void Qt3DModel::createPointEntity()
     geometryRenderer->setVertexCount(vertices.size());
 
     Qt3DExtras::QDiffuseSpecularMaterial* qtMaterial = new Qt3DExtras::QDiffuseSpecularMaterial();
-    qtMaterial->setParent(entity);
 
     entity->addComponent(geometryRenderer);
     entity->addComponent(qtMaterial);
-    entity->addComponent(m_transform);
 
     m_pointEntity = entity; 
     m_pointEntity->setEnabled(false);
@@ -333,7 +349,6 @@ void Qt3DModel::createWireframeEntity()
 
     entity->addComponent(geometryRenderer);
     entity->addComponent(qtMaterial);
-    entity->addComponent(m_transform);
 
     m_wireframeEntity = entity;
     m_wireframeEntity->setEnabled(false);
@@ -376,12 +391,10 @@ void Qt3DModel::createGeometryEntity(const FaceGroup& faceGroup)
         geometryRenderer->setGeometry(geometry);
         geometryRenderer->setVertexCount(faceGroup.nbe * 2);
 
-        Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
-        qtMaterial->setParent(entity);
+        Qt3DRender::QMaterial* qtMaterial = m_mapMaterials[material];
 
         entity->addComponent(geometryRenderer);
         entity->addComponent(qtMaterial);
-        entity->addComponent(m_transform);
         m_edgeEntities.push_back(entity);
     }
     if (faceGroup.nbt > 0)
@@ -412,12 +425,10 @@ void Qt3DModel::createGeometryEntity(const FaceGroup& faceGroup)
         geometryRenderer->setGeometry(geometry);
         geometryRenderer->setVertexCount(faceGroup.nbt * 3);
 
-        Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
-        qtMaterial->setParent(entity);
+        Qt3DRender::QMaterial* qtMaterial = m_mapMaterials[material];
 
         entity->addComponent(geometryRenderer);
         entity->addComponent(qtMaterial);
-        entity->addComponent(m_transform);
         m_triangleEntities.push_back(entity);
     }
     if (faceGroup.nbq > 0)
@@ -448,12 +459,10 @@ void Qt3DModel::createGeometryEntity(const FaceGroup& faceGroup)
         geometryRenderer->setGeometry(geometry);
         geometryRenderer->setVertexCount(faceGroup.nbq * 3 * 2);
 
-        Qt3DRender::QMaterial* qtMaterial = buildMaterial(material);
-        qtMaterial->setParent(entity);
+        Qt3DRender::QMaterial* qtMaterial = m_mapMaterials[material];
 
         entity->addComponent(geometryRenderer);
         entity->addComponent(qtMaterial);
-        entity->addComponent(m_transform);
         m_triangleEntities.push_back(entity);
 
     }

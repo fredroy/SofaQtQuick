@@ -37,6 +37,8 @@ Item {
             anchors.fill: scene
             aspects: ["input", "logic"]
             focus: true
+            width: scene.width
+            height: scene.width
 
             SofaEntity {
                 id: sceneRoot

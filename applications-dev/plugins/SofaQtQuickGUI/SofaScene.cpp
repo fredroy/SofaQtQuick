@@ -87,7 +87,6 @@ using sofa::helper::system::FileSystem ;
 #include <QRunnable>
 #include <QGuiApplication>
 #include <QOffscreenSurface>
-#include <GL/glut.h>
 #include <SofaQtQuickGUI/qt3d/DrawToolQt3D.h>
 
 #define STRINGIFY(x) #x

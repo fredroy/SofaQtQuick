@@ -24,7 +24,6 @@ along with sofaqtquick. If not, see <http://www.gnu.org/licenses/>.
 #include <sofa/simulation/Node.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/visual/DrawToolGL.h>
-#include <SofaOpenglVisual/OglModel.h>
 #include <sofa/helper/cast.h>
 
 #include <QtQuick/qquickwindow.h>
@@ -375,7 +374,6 @@ QVector3D SofaViewer::projectOnPlane(const QPointF& ssPoint, const QVector3D& pl
 }
 
 using sofa::simulation::Node;
-using sofa::component::visualmodel::OglModel;
 
 class PickUsingRasterizationWorker : public QRunnable
 {

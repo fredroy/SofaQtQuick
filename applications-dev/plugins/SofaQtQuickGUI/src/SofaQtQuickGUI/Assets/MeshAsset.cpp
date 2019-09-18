@@ -1,6 +1,5 @@
 #include "MeshAsset.h"
 
-#include <SofaOpenglVisual/OglModel.h>
 #include <SofaBaseVisual/InteractiveCamera.h>
 #include <sofa/helper/cast.h>
 #include <sofa/simulation/InitVisitor.h>
@@ -12,7 +11,6 @@
 using sofapython3::PythonEnvironment;
 namespace py = pybind11;
 
-using sofa::component::visualmodel::OglModel;
 using sofa::core::loader::MeshLoader;
 using sofa::component::visualmodel::InteractiveCamera;
 

@@ -53,7 +53,6 @@ using sofa::core::objectmodel::MouseEvent ;
 #include <SofaSimulationGraph/DAGSimulation.h>
 #include <SofaSimulationGraph/init.h>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/visual/DrawToolGL.h>
 
 #include <SofaPython3/PythonEnvironment.h>
 #include <SofaPython3/SceneLoaderPY3.h>
@@ -62,7 +61,6 @@ namespace py = pybind11;
 
 
 #include <SofaBaseVisual/VisualStyle.h>
-#include <SofaOpenglVisual/OglModel.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
 #include <sofa/simulation/MechanicalVisitor.h>
 #include <sofa/simulation/DeleteVisitor.h>

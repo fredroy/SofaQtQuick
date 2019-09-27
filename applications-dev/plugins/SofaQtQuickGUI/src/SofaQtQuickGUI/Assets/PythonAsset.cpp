@@ -7,15 +7,12 @@ using sofaqtquick::PythonEnvironment;
 namespace py = pybind11;
 
 #include <memory>
-#include <experimental/filesystem>
 #include <QMessageBox>
 #include <QProcess>
+#include <QFileInfo>
 
 #include "AssetFactory.h"
 #include "AssetFactory.inl"
-
-
-namespace fs = std::experimental::filesystem;
 
 namespace sofa::qtquick
 {
@@ -54,11 +51,10 @@ sofaqtquick::bindings::SofaNode* PythonAsset::create(const QString& assetName)
         return new sofaqtquick::bindings::SofaNode(nullptr);
     }
 
-//    fs::path obj(m_path);
+    QFileInfo fileInfo(m_path.c_str());
 
-//    std::string stem = obj.stem();
-//    std::string path = obj.parent_path().string();
-    std::string stem, path;
+    std::string stem = fileInfo.baseName().toStdString();
+    std::string path = fileInfo.path().toStdString();
 
     sofa::simulation::Node::SPtr root = sofa::core::objectmodel::New<sofa::simulation::graph::DAGNode>();
     root->setName("NEWNAME");
@@ -87,19 +83,18 @@ void PythonAsset::getDetails()
 {
     if (m_detailsLoaded) return;
 
-    std::string stem,ext,path,objstr;
-//    fs::path obj(m_path);
+    QFileInfo fileInfo(m_path.c_str());
 
-//    std::string stem = obj.stem();
-//    std::string ext = obj.extension();
-//    std::string path = obj.parent_path().string();
-//    std::cout << ext << std::endl;
+    std::string stem = fileInfo.baseName().toStdString();
+    std::string path = fileInfo.path().toStdString();
+    std::string ext = fileInfo.completeSuffix().toStdString();
+
     if (ext == ".pyscn")
     {
         QProcess process;
         process.start("/bin/mkdir", QStringList() << "-p" << "/tmp/runSofa2");
         process.waitForFinished(-1);
-        process.start("/bin/cp", QStringList() << objstr.c_str() << QString("/tmp/runSofa2/") + stem.c_str() + ".py");
+        process.start("/bin/cp", QStringList() << fileInfo.path() << QString("/tmp/runSofa2/") + stem.c_str() + ".py");
         process.waitForFinished(-1);
         path = "/tmp/runSofa2";
     }

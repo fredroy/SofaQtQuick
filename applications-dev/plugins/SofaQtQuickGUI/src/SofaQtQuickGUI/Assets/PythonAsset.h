@@ -5,8 +5,7 @@
 
 #include <QQmlListProperty>
 #include <QProcess>
-
-//#include <experimental/filesystem>
+#include <QFileInfo>
 
 namespace sofa::qtquick
 {
@@ -56,34 +55,30 @@ protected:
     Q_INVOKABLE virtual QUrl getIconPath() override { return QUrl("qrc:/icon/ICON_PYTHON.png"); }
     Q_INVOKABLE virtual bool getIsSofaContent() override
     {
-//        if (m_extension == "py")
-//        {
-//            namespace fs = std::experimental::filesystem;
-
-//            fs::path p(m_path);
-//            auto module = p.stem();
-//            auto path = p.parent_path();
-//            QString docstring(sofaqtquick::PythonEnvironment::getPythonScriptDocstring(path, module).c_str());
-//            if (docstring.contains("type: SofaContent"))
-//                return true;
-//        }
-//        if (m_extension == "pyscn" || m_extension == "py3")
-//        {
-//            namespace fs = std::experimental::filesystem;
-
-//            fs::path p(m_path);
-//            auto module = p.stem();
-//            auto path = p.parent_path();
-//            QProcess process;
-//            process.start("/bin/mkdir", QStringList() << "-p" << "/tmp/runSofa2");
-//            process.waitForFinished(-1);
-//            process.start("/bin/cp", QStringList() << p.string().c_str() << QString("/tmp/runSofa2/") + module.c_str() + ".py");
-//            process.waitForFinished(-1);
-//            path = "/tmp/runSofa2";
-//            QString docstring(sofaqtquick::PythonEnvironment::getPythonScriptDocstring(path, module).c_str());
-//            if (docstring.contains("type: SofaContent"))
-//                return true;
-//        }
+        if (m_extension == "py")
+        {
+            QFileInfo fileInfo(m_path.c_str());
+            std::string module = fileInfo.baseName().toStdString();
+            std::string path = fileInfo.path().toStdString();
+            QString docstring(sofaqtquick::PythonEnvironment::getPythonScriptDocstring(path, module).c_str());
+            if (docstring.contains("type: SofaContent"))
+                return true;
+        }
+        if (m_extension == "pyscn" || m_extension == "py3")
+        {
+            QFileInfo fileInfo(m_path.c_str());
+            std::string module = fileInfo.baseName().toStdString();
+            std::string path = fileInfo.path().toStdString();
+            QProcess process;
+            process.start("/bin/mkdir", QStringList() << "-p" << "/tmp/runSofa2");
+            process.waitForFinished(-1);
+            process.start("/bin/cp", QStringList() << fileInfo.path() << QString("/tmp/runSofa2/") + module.c_str() + ".py");
+            process.waitForFinished(-1);
+            path = "/tmp/runSofa2";
+            QString docstring(sofaqtquick::PythonEnvironment::getPythonScriptDocstring(path, module).c_str());
+            if (docstring.contains("type: SofaContent"))
+                return true;
+        }
         return false;
     }
 

@@ -1,8 +1,7 @@
 #include "TextureAsset.h"
 
 
-#include <SofaOpenglVisual/OglModel.h>
-using sofa::component::visualmodel::OglModel;
+#include <SofaBaseVisual/VisualCreator.h>
 
 #include "AssetFactory.h"
 #include "AssetFactory.inl"
@@ -47,9 +46,9 @@ sofaqtquick::bindings::SofaNode* TextureAsset::create(const QString& assetName)
         msg_error("Unknown file format.");
         return new sofaqtquick::bindings::SofaNode(nullptr);
     }
-    sofa::simulation::Node::SPtr root;
+    sofa::simulation::Node::SPtr root; // gne ?
     root->setName("root");
-    OglModel::SPtr vmodel = sofa::core::objectmodel::New<OglModel>();
+    auto vmodel = sofa::component::visualmodel::VisualCreator::getInstance()->instanciateVisualModel(root);
     vmodel->setFilename("mesh/cube.obj");
     vmodel->setName("vmodel");
     vmodel->texturename.setValue(m_path);

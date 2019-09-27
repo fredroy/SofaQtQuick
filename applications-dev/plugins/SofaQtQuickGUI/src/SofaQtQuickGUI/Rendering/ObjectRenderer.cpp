@@ -19,15 +19,12 @@ using sofa::core::visual::VisualParams ;
 #include <SofaBaseVisual/VisualStyle.h>
 using sofa::component::visualmodel::VisualStyle;
 
-#include <SofaBaseVisual/VisualStyle.h>
-using sofa::component::visualmodel::VisualStyle;
-
 #include <SofaMeshCollision/TriangleModel.h>
 using sofa::component::collision::TriangleModel ;
 using sofa::core::CollisionModel ;
 
-#include <SofaOpenglVisual/Light.h>
-using sofa::component::visualmodel::Light ;
+#include <SofaBaseVisual/BaseLight.h>
+using sofa::component::visualmodel::BaseLight ;
 
 #include <SofaBaseVisual/BaseCamera.h>
 using sofa::component::visualmodel::BaseCamera ;
@@ -45,7 +42,7 @@ void drawCamera(BaseCamera* camera, VisualParams* VisualParams, bool isSelected)
 {
 }
 
-void drawLight(Light* light, VisualParams* visualParams, bool isSelected)
+void drawLight(BaseLight* light, VisualParams* visualParams, bool isSelected)
 {
     light->drawSource(visualParams) ;
 }
@@ -56,7 +53,7 @@ void drawVisualModel(VisualModel* visualModel, VisualParams* visualParams, bool 
     if(camera)
         return drawCamera(camera, visualParams, isSelected);
 
-    Light* light = dynamic_cast<Light*>(visualModel) ;
+    BaseLight* light = dynamic_cast<BaseLight*>(visualModel) ;
     if(light)
         return drawLight(light, visualParams, isSelected);
 

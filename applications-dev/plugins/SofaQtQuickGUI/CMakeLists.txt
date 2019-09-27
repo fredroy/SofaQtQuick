@@ -4,7 +4,6 @@ project(SofaQtQuickGUI VERSION 1.0)
 set (CMAKE_CXX_STANDARD 17)
 
 find_package(SofaFramework REQUIRED)
-find_package(SofaOpenglVisual REQUIRED)
 find_package(SofaGeneral REQUIRED)
 find_package(SofaCommon REQUIRED)
 
@@ -248,10 +247,8 @@ set(HEADER_FILES ${HEADER_FILES}
 )
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${MOC_FILES} ${SOURCE_FILES} ${QRC_FILES} ${RESOURCE_FILES} ${QML_FILES} ${CONFIG_FILES} ${PYTHON_FILES} ${EXTRA_FILES} ${ASSET_TEMPLATES})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${SOFAPYTHON_LIBRARY} SofaOpenglVisual SofaGeneralLoader SofaLoader SofaSimulationGraph SofaGraphComponent SofaBoundaryCondition SofaComponentBase SofaMeshCollision Qt5::Core Qt5::Gui Qt5::Widgets Qt5::QuickControls2 Qt5::Qml Qt5::Quick Qt5::WebEngine)
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    target_link_libraries(${PROJECT_NAME} PUBLIC stdc++fs)
-endif()
+target_link_libraries(${PROJECT_NAME} PUBLIC ${SOFAPYTHON_LIBRARY}  SofaGeneralLoader SofaLoader SofaSimulationGraph SofaGraphComponent SofaBoundaryCondition SofaComponentBase SofaMeshCollision Qt5::Core Qt5::Gui Qt5::Widgets Qt5::QuickControls2 Qt5::Qml Qt5::Quick Qt5::WebEngine)
+
 #target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>")

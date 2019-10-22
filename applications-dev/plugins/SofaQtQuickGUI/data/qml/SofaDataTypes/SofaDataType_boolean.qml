@@ -43,7 +43,7 @@ ColumnLayout {
         id: item
         Layout.fillWidth: true
         Layout.minimumWidth: control.implicitWidth
-        Layout.preferredHeight: control.implicitHeight
+        Layout.preferredHeight: control.implicitHeight + 2
 
         CheckBox {
             id: control

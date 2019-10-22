@@ -253,8 +253,8 @@ public:
     // TODO: avoid this kind of specialization if possible
     Q_INVOKABLE sofa::qtquick::SofaComponent* visualStyleComponent();
 
-    Q_INVOKABLE bool save(const QString& projectRootDir);
-    Q_INVOKABLE bool save2();
+    //Q_INVOKABLE bool save(const QString& projectRootDir);
+    //Q_INVOKABLE bool save2();
 
     ///Q_INVOKABLE sofa::qtquick::SofaComponent* retrievePythonScriptController(SofaComponent* context, const QString& derivedFrom, const QString& module = "");
 
@@ -291,9 +291,10 @@ private slots:
     void unloadAllCanvas();
 
 public:
-    sofa::simulation::Simulation* sofaSimulation() const {return mySofaSimulation;}
-    const sofa::simulation::Node::SPtr& sofaRootNode() const {return mySofaRootNode;}
-    sofa::simulation::Node::SPtr& sofaRootNode() {return mySofaRootNode;}
+    sofa::simulation::Simulation* sofaSimulation() const { return mySofaSimulation; }
+    const sofa::simulation::Node::SPtr& sofaRootNode() const { return mySofaRootNode; }
+    sofa::simulation::Node::SPtr& sofaRootNode() { return mySofaRootNode; }
+    void setSofaRootNode(sofa::simulation::Node::SPtr node) { mySofaRootNode = node.get(); }
 
     /// Call that before rendering any sofa scene. This insure that the texture & meshes are updated.
     void prepareSceneForDrawing() ;

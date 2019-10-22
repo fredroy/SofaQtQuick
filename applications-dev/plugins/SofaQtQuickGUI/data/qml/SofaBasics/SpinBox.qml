@@ -1,114 +1,314 @@
-import QtQuick 2.0
+/*********************************************************************
+Copyright 2019, Inria, CNRS, University of Lille
+
+This file is part of runSofa2
+
+runSofa2 is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+runSofa2 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with sofaqtquick. If not, see <http://www.gnu.org/licenses/>.
+*********************************************************************/
+/********************************************************************
+ Contributors:
+    - initial version from Anatoscope
+    - damien.marchal@univ-lille.fr
+    - bruno.josue.marques@inria.fr
+********************************************************************/
+
+import QtQuick 2.4
 import QtQuick.Controls 2.4
 import QtGraphicalEffects 1.0
 import SofaColorScheme 1.0
+import SofaBasics 1.0 as SB
 
-SpinBox {
+Rectangle {
+    id: control
+
+    property bool readOnly: false // like in other QtQuick controls, enables / disables edition for this control
+    property bool enabled: true  // like in other QtQuick controls, enables / disables the edition of this control & grays it out
+    property bool showIndicators: true  // shows / hides the up / down indicators for this spinBox
+
+    property string prefix: ""  // a prefix for this spinbox (the name of the variable for instance "x: ")
+    property string suffix: ""  // a suffix for this spinbox (for instance a unit of measure)
+    property int precision: 6  // visual round up of the
+    property double step: 0.01  // the step size to scale mouse / indicators interactions
+    property double value: 50.0  // the value stored in this spinbox
+
+    property double from: -Infinity
+    property double to: Infinity
+
     property alias cornerPositions: backgroundID.cornerPositions
     property alias position: backgroundID.position
 
-    property string prefix: ""
-    property string suffix: ""
-
-    id: control
-    value: 50
-    editable: true
-    hoverEnabled: true
-    height: 20
     implicitHeight: 20
-    implicitWidth: inputText.implicitWidth + up.indicator.width + down.indicator.width
+    implicitWidth: content.implicitWidth + upIndicator.width + downIndicator.width
+    activeFocusOnTab: true
+    onActiveFocusChanged: isEditing = true
 
-    onActiveFocusChanged: {
-        backgroundID.setControlState(control.enabled && control.editable, control.hovered, control.activeFocus)
+    property bool isEditing: false
+    onIsEditingChanged: {
+        if (isEditing) {
+            var w = modeLoader.item.implicitWidth
+            modeLoader.sourceComponent = textFieldMode
+            modeLoader.item.implicitWidth = w // readjust width after loading the textField
+        }
+        else {
+            modeLoader.sourceComponent = spinBoxMode
+        }
     }
-    onHoveredChanged: {
-        backgroundID.setControlState(control.enabled && control.editable, control.hovered, control.activeFocus)
-    }
-    Component.onCompleted: {
-        backgroundID.setControlState(control.enabled && control.editable, control.hovered, control.activeFocus)
+    color: "transparent"
+
+
+    TextMetrics {
+        id: textMetrics
+        font.family: "Arial"
+        elide: Text.ElideRight
+        elideWidth: control.width - 10
+        text: formatText(control.value, control.prefix, control.suffix)
     }
 
-    function formatText(value, locale, prefix, suffix) {
+
+    function formatText(v, prefix, suffix) {
         var str = ""
         if (prefix !== "")
             str += qsTr(prefix)
-        str += qsTr("%1").arg(value)
+        str += Number(v.toPrecision((!precision) ? 6 : precision)).toString()
         if (suffix !== "")
-            str += qsTr(suffix)
+            str += qsTr(suffix) + " "
         return str
     }
 
-    contentItem: Rectangle {
-        anchors.fill: parent
-        color: "transparent"
-        TextInput {
-            id: inputText
-            z: 2
-            anchors.centerIn: parent
-            text: formatText(value, locale, prefix, suffix)
-            font: control.font
-            color: control.editable ? "black" : "#464646"
-            //        selectionColor: "#21be2b"
-            //        selectedTextColor: "#ffffff"
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
-
-            readOnly: !control.editable
-            validator: control.validator
-            inputMethodHints: Qt.ImhFormattedNumbersOnly
-        }
+    function incValue(initialValue, incrVal)
+    {
+        var step = control.step
+        var newValue = initialValue + incrVal
+        if (newValue > to)
+            newValue = to
+        if (newValue < from)
+            newValue = from
+        control.value = newValue
+        textMetrics.text = formatText(newValue, control.prefix, control.suffix)
     }
 
-    up.indicator: Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.right: parent.right
+    function setValue(_value)
+    {
+        control.value = _value
+        textMetrics.text = formatText(_value, control.prefix, control.suffix)
+    }
+
+
+    Rectangle {
+        id: upIndicator
+        anchors.verticalCenter: control.verticalCenter
+        anchors.right: control.right
         width: 20
-        height: parent.height
+        implicitWidth: 20
+        height: control.height
+        visible: !isEditing && showIndicators
         color: "transparent"
         Image {
             id: rightup
-            x: control.mirrored ? 7 : parent.width - width - 7
-            y: parent.height / 4
+            x: control.mirrored ? 2 : upIndicator.width - width - 2
+            y: upIndicator.height / 4
             width: 9
             height: width
             source: "qrc:icon/spinboxRight.png"
         }
+
+        MouseArea {
+            id: upMouseArea
+            anchors.fill: upIndicator
+            hoverEnabled: true
+            acceptedButtons: !control.readOnly && control.enabled ? Qt.LeftButton : Qt.NoButton
+
+            onHoveredChanged: {
+                cursorShape = Qt.ArrowCursor
+                if (containsMouse) {
+                    backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                } else {
+                    backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                }
+            }
+            onClicked: {
+                control.incValue(control.value, control.step)
+            }
+        }
     }
 
-    down.indicator: Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.left: parent.left
+    Rectangle {
+        id: downIndicator
+        anchors.verticalCenter: control.verticalCenter
+        anchors.left: control.left
         width: 20
-        height: parent.height
+        implicitWidth: 20
+        height: control.height
         color: "transparent"
+        visible: !isEditing && showIndicators
         Image {
             id: leftdown
-            x: control.mirrored ? parent.width - width - 7 : 7
-            y: parent.height / 4
+            x: control.mirrored ? downIndicator.width - width - 2 : 2
+            y: downIndicator.height / 4
             width: 9
             height: width
             source: "qrc:icon/spinboxLeft.png"
         }
+        MouseArea {
+            id: downMouseArea
+            anchors.fill: downIndicator
+            hoverEnabled: true
+            acceptedButtons: !control.readOnly && control.enabled ? Qt.LeftButton : Qt.NoButton
+
+            onHoveredChanged: {
+                cursorShape = Qt.ArrowCursor
+                if (containsMouse) {
+                    backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                } else {
+                    backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                }
+            }
+
+
+            onClicked: {
+                control.incValue(control.value, -control.step)
+            }
+        }
     }
 
-    background: ControlsBackground {
-        id: backgroundID
-        implicitWidth: 40
+    Rectangle {
+        id: content
+        anchors.left: isEditing || !showIndicators ? control.left : downIndicator.right
+        anchors.right: isEditing || !showIndicators ? control.right: upIndicator.left
+        anchors.verticalCenter: control.verticalCenter
+        color: "transparent"
+        implicitWidth: modeLoader.item.implicitWidth
         implicitHeight: 20
 
-        borderColor: control.readOnly ? "#393939" : "#505050";
-        controlType: controlTypes["InputField"]
+
+        Component {
+            id: spinBoxMode
+            TextInput {
+                id: labelID
+
+                anchors.centerIn: parent
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+
+                text: textMetrics.elidedText
+                color: control.enabled ? (control.readOnly ? "#393939" : "black") : "#464646"
+                clip: true
+                selectByMouse: control.readOnly || control.enabled ? true : false
+                readOnly: true
+                MouseArea {
+                    id: contentMouseArea
+
+                    property var initialPosition : Qt.vector2d(0,0)
+                    property var initialValue
+
+                    anchors.fill: labelID
+                    hoverEnabled: true
+                    acceptedButtons: !control.readOnly && control.enabled ? Qt.LeftButton : Qt.NoButton
+
+                    onHoveredChanged: {
+                        if (control.enabled && !control.readOnly) {
+                            cursorShape = Qt.SizeHorCursor
+                        }
+                        if (containsMouse) {
+                            backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                        } else {
+                            backgroundID.setControlState(control.enabled, containsMouse || control.readOnly, upIndicator.focus)
+                        }
+                    }
+
+                    onPressed:
+                    {
+                        initialValue = control.value
+                        initialPosition = Qt.vector2d(mouseX, mouseY)
+                    }
+
+                    onPositionChanged:
+                    {
+                        if (!pressed)
+                            return
+                        var currentPosition = Qt.vector2d(mouseX, mouseY)
+                        incValue(initialValue, (currentPosition.x - initialPosition.x) * step)
+                    }
+
+                    onReleased: {
+                        var currentPosition = Qt.vector2d(mouseX, mouseY)
+                        if (currentPosition.x - initialPosition.x === 0)
+                            isEditing = true
+                    }
+                }
+            }
+
+        }
+
+        Component {
+            id: textFieldMode
+            SB.TextField {
+                id: textFieldID
+
+                anchors.centerIn: parent
+                horizontalAlignment: Qt.AlignHCenter
+                verticalAlignment: Qt.AlignVCenter
+
+//                text: formatText(value, prefix, suffix, false).replace(prefix, "").replace(suffix, "")
+                text: +(Number(control.value).toString())
+                clip: true
+                validator: DoubleValidator{}
+                color: control.readOnly ? "#393939" : "black"
+                focus: true
+                selectByMouse: true
+                onEditingFinished: {
+                    var v = +text
+                    if (v > to)
+                        v = to
+                    if (v < from)
+                        v = from
+                    setValue(v)
+                    isEditing = false
+                }
+
+                Component.onCompleted: {
+                    forceActiveFocus()
+                    selectAll()
+                }
+                position: backgroundID.position
+                enabled: control.enabled
+                readOnly: control.readOnly
+
+            }
+        }
+
+        Loader {
+            id: modeLoader
+            sourceComponent: spinBoxMode
+            anchors.fill: parent
+        }
     }
 
-    //    DropShadow {
-    //        z: -1
-    //        anchors.fill: backgroundRect
-    //        horizontalOffset: 0
-    //        verticalOffset: -1
-    //        radius: 4.0
-    //        samples: 17
-    //        color: "#50000000"
-    //        source: backgroundRect
-    //    }
+    onEnabledChanged: {
+        backgroundID.setControlState(control.enabled, control.readOnly ? true : false, control.focus)
+    }
+    Component.onCompleted: {
+        backgroundID.setControlState(control.enabled, control.readOnly ? true : false, control.focus)
+    }
 
+    ControlsBackground {
+        id: backgroundID
+        z: -1
+        implicitWidth: parent.width
+        implicitHeight: parent.implicitHeight
+
+        borderColor: control.enabled ? "#393939" : "#505050";
+        controlType: controlTypes["InputField"]
+    }
 }

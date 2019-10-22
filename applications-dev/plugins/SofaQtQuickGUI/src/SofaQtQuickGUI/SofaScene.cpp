@@ -59,6 +59,8 @@ using sofa::core::objectmodel::MouseEvent ;
 using sofapython3::PythonEnvironment;
 namespace py = pybind11;
 
+#include <SofaPython3/PythonFactory.h>
+using sofapython3::PythonFactory;
 
 #include <SofaBaseVisual/VisualStyle.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
@@ -198,8 +200,11 @@ bool LoaderProcess(SofaScene* sofaScene)
     if(!sofaScene || !sofaScene->sofaSimulation() || sofaScene->path().isEmpty())
         return false;
 
-    sofaScene->sofaRootNode() = sofaScene->sofaSimulation()->load(sofaScene->path().toLatin1().constData());
-    if( sofaScene->sofaRootNode() )
+    std::cout << sofaScene->path().toLatin1().toStdString() << std::endl;
+
+    Node::SPtr n = sofaScene->sofaSimulation()->load(sofaScene->path().toLatin1().toStdString());
+    sofaScene->setSofaRootNode(n);
+    if( sofaScene->sofaRootNode().get() )
     {
         sofaScene->sofaSimulation()->init(sofaScene->sofaRootNode().get());
 
@@ -312,7 +317,6 @@ void SofaScene::open()
         return;
 
     // reset properties
-
     setAnimate(false);
 
     setSelectedComponent(nullptr);
@@ -398,6 +402,7 @@ void SofaScene::open()
     // load the requested scene synchronously / asynchronously
     if(currentAsynchronous)
     {
+        std::cout << " ...ASYNC LOADING... " << std::endl;
         LoaderThread* loaderThread = new LoaderThread(this);
 
         connect(loaderThread, &QThread::finished, this, [this, loaderThread]() {
@@ -416,6 +421,7 @@ void SofaScene::open()
     }
     else
     {
+        std::cout << " ...SYNCHRONOUS LOADING... " << std::endl;
         if(!LoaderProcess(this))
             setStatus(Status::Error);
         else
@@ -569,7 +575,7 @@ void SofaScene::setSelectedComponent(sofaqtquick::bindings::SofaBase* newSelecte
     if(newSelectedComponent == mySelectedComponent)
     {
         return;
-    }  
+    }
 
     mySelectedComponent = nullptr;
     if(newSelectedComponent)
@@ -1385,47 +1391,6 @@ SofaComponent* SofaScene::visualStyleComponent()
     }
 
     return nullptr;
-}
-
-bool SofaScene::save2()
-{
-    py::str file(path().toStdString());
-    py::object rootNode = py::cast(mySofaRootNode);
-    py::tuple args = py::make_tuple(file, rootNode);
-    py::module m = py::module::import("SofaRuntime");
-    bool ret =  py::cast<bool>(m.attr("saveAsPythonScene")(args));
-    if (ret) {
-        msg_info("runSofa2") << "File saved to "  << path().toStdString();
-    } else {
-        msg_error("runSofa2") << "Could not save to file "  << path().toStdString();
-    }
-    return ret;
-}
-
-
-bool SofaScene::save(const QString& projectRootDir)
-{
-    QFileDialog dialog(nullptr, tr("Save Scene File"), projectRootDir, tr("All files (*)"));
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setAcceptMode(QFileDialog::AcceptSave);
-    if (dialog.exec())
-    {
-        std::string fileName = dialog.selectedFiles().first().toStdString();
-        {
-            py::str file(fileName);
-            py::object rootNode = py::cast(mySofaRootNode);
-            py::tuple args = py::make_tuple(file, rootNode);
-            py::module m = py::module::import("SofaRuntime");
-            bool ret =  py::cast<bool>(m.attr("saveAsPythonScene")(args));
-            if (ret) {
-                msg_info("runSofa2") << "File saved to "  << path().toStdString();
-            } else {
-                msg_error("runSofa2") << "Could not save to file "  << path().toStdString();
-            }
-            return ret;
-        }
-    }
-    return false;
 }
 
 QVariant SofaScene::onDataValueByPath(const QString& path) const

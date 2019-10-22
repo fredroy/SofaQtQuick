@@ -165,10 +165,9 @@ bool setDataLink(BaseData* data, const QString& link)
         return false;
 
     if(link.isEmpty())
-        data->setParent(0);
+        data->setParent(nullptr);
     else
         data->setParent(link.toStdString());
-
     return data->getParent();
 }
 
@@ -335,8 +334,53 @@ bool setDataValueFromQVariant(BaseData* data, const QVariant& value)
 QVariantMap& convertDataInfoToProperties(const BaseData* data, QVariantMap& properties)
 {
     properties.insert("readOnly", data->isReadOnly());
-    const AbstractTypeInfo* typeinfo = data->getValueTypeInfo();
 
+    /// DataFilename are use to sœœtores path to files.
+    auto aDataFilename = dynamic_cast<const DataFileName*>(data) ;
+
+    /// OptionsGroup are used to encode a finite set of alternatives.
+    auto anOptionGroup =  dynamic_cast<const Data<OptionsGroup>*>(data) ;
+
+    /// OptionsGroup are used to encode a finite set of alternatives.
+    auto aRGBAColor =  dynamic_cast<const Data<RGBAColor>*>(data) ;
+
+    if(aDataFilename)
+    {
+        properties.insert("type", "FileName");
+        properties.insert("url", QString::fromStdString(aDataFilename->getFullPath())) ;
+
+        if(aDataFilename->getValueString() == ""){
+            properties.insert("folderurl",  "") ;
+        }else{
+            std::string directory = FileSystem::getParentDirectory( aDataFilename->getFullPath() ) ;
+            properties.insert("folderurl",  QString::fromStdString(directory)) ;
+        }
+        return properties;
+    }
+
+    if(anOptionGroup)
+    {
+        QStringList choices;
+
+        const OptionsGroup& group = anOptionGroup->getValue();
+        for(unsigned int i=0;i<group.size();++i)
+        {
+            choices.append(QString::fromStdString(group[i]));
+        }
+        properties.insert("type", "OptionsGroup");
+        properties.insert("choices", choices);
+        properties.insert("autoUpdate", true);
+        return properties;
+    }
+
+    if(aRGBAColor)
+    {
+        properties.insert("type", "RGBAColor");
+        properties.insert("autoUpdate", true);
+        return properties;
+    }
+
+    const AbstractTypeInfo* typeinfo = data->getValueTypeInfo();
     if(!typeinfo->Container()){
         if(typeinfo->Integer())
         {
@@ -366,14 +410,15 @@ QVariantMap& convertDataInfoToProperties(const BaseData* data, QVariantMap& prop
             return properties;
         }
 
-        /// Default type...
-        properties.insert("type","undefined");
+        /// Specific type...
+        properties.insert("type",data->getValueTypeString().c_str());
         return properties;
     }
 
     int nbCols = typeinfo->size();
-
+    int nbRows = typeinfo->size(data->getValueVoidPtr()) / nbCols;
     properties.insert("cols", nbCols);
+    properties.insert("rows", nbRows);
     if(typeinfo->FixedSize())
         properties.insert("static", true);
 
@@ -381,48 +426,7 @@ QVariantMap& convertDataInfoToProperties(const BaseData* data, QVariantMap& prop
     if(baseTypeinfo->FixedSize())
         properties.insert("innerStatic", true);
 
-    /// DataFilename are use to sœœtores path to files.
-    auto aDataFilename = dynamic_cast<const DataFileName*>(data) ;
-
-    /// OptionsGroup are used to encode a finite set of alternatives.
-    auto anOptionGroup =  dynamic_cast<const Data<OptionsGroup>*>(data) ;
-
-    /// OptionsGroup are used to encode a finite set of alternatives.
-    auto aRGBAColor =  dynamic_cast<const Data<RGBAColor>*>(data) ;
-
-    if(aDataFilename)
-    {
-        properties.insert("type", "FileName");
-        properties.insert("url", QString::fromStdString(aDataFilename->getFullPath())) ;
-
-        const std::string& directory = FileSystem::getParentDirectory( aDataFilename->getFullPath() ) ;
-        properties.insert("folderurl",  QString::fromStdString(directory)) ;
-        return properties;
-    }
-
-    if(anOptionGroup)
-    {
-        QStringList choices;
-
-        const OptionsGroup& group = anOptionGroup->getValue();
-        for(unsigned int i=0;i<group.size();++i)
-        {
-            choices.append(QString::fromStdString(group[i]));
-        }
-        properties.insert("type", "OptionsGroup");
-        properties.insert("choices", choices);
-        properties.insert("autoUpdate", true);
-        return properties;
-    }
-
-    if(aRGBAColor)
-    {
-        properties.insert("type", "RGBAColor");
-        properties.insert("autoUpdate", true);
-        return properties;
-    }
-
-    QString widget(data->getWidget());
+    QString widget = QString::fromStdString(data->getWidget());
     if(!widget.isEmpty())
     {
         properties.insert("type",widget);
@@ -540,7 +544,7 @@ QVariantMap getSofaDataProperties(const sofa::core::objectmodel::BaseData* data)
         properties.insert("autoUpdate", true);
     }
 
-    QString widget(data->getWidget());
+    QString widget(QString::fromStdString(data->getWidget()));
     if(!widget.isEmpty())
         type = widget;
 
@@ -548,9 +552,9 @@ QVariantMap getSofaDataProperties(const sofa::core::objectmodel::BaseData* data)
 
     //object.insert("sofaData", QVariant::fromValue(sofaData));
     object.insert("name", data->getName().c_str());
-    object.insert("description", data->getHelp());
+    object.insert("description", QString::fromStdString(data->getHelp()));
     object.insert("type", type);
-    object.insert("group", data->getGroup());
+    object.insert("group", QString::fromStdString(data->getGroup()));
     object.insert("properties", properties);
     object.insert("link", QString::fromStdString(data->getLinkPath()));
     object.insert("value", createQVariantFromData(data));

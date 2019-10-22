@@ -6,31 +6,31 @@ import SofaColorScheme 1.0
 TextField {
     property alias cornerPositions: backgroundID.cornerPositions
     property alias position: backgroundID.position
+    property var borderColor: undefined
 
     id: control
     placeholderText: qsTr("None")
-    color: readOnly ? "#464646" : "black"
+    color: control.enabled ? (readOnly ? "#393939" : "black") : "#464646"
     leftPadding: 7
     rightPadding: 7
     hoverEnabled: true
-
     background: ControlsBackground {
         id: backgroundID
         implicitWidth: 50
         implicitHeight: 20
 
-        borderColor: control.readOnly ? "#393939" : "#505050";
+        borderColor: control.borderColor === undefined ? control.readOnly ? "#393939" : "#505050" : control.borderColor
         controlType: controlTypes["InputField"]
     }
 
     onActiveFocusChanged: {
-        backgroundID.setControlState(control.enabled && !control.readOnly, control.hovered, control.activeFocus)
+        if (backgroundID !== null) backgroundID.setControlState(control.enabled, control.hovered || control.readOnly, control.activeFocus)
     }
     onHoveredChanged: {
-        backgroundID.setControlState(control.enabled && !control.readOnly, control.hovered, control.activeFocus)
+        if (backgroundID !== null) backgroundID.setControlState(control.enabled, control.hovered || control.readOnly, control.activeFocus)
     }
     Component.onCompleted: {
-        backgroundID.setControlState(control.enabled && !control.readOnly, control.hovered, control.activeFocus)
+        if (backgroundID !== null) backgroundID.setControlState(control.enabled, control.hovered || control.readOnly, control.activeFocus)
     }
 
 

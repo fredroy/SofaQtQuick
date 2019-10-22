@@ -31,8 +31,7 @@ TextField {
 
     property var sofaData: null
     property int refreshCounter: 0
-    readOnly: sofaData & sofaData.readOnly
-    enabled: !sofaData.readOnly
+    readOnly: sofaData ? (sofaData.type !== "string" ? true : sofaData.readOnly) : sofaData.readOnly
     text: sofaData.value.toString()
     implicitWidth: parent.width
 
@@ -40,6 +39,14 @@ TextField {
 
     onAccepted:
     {
+        console.log("Accepted")
         sofaData.value = text
+        root.focus = false
+    }
+    onEditingFinished:
+    {
+        console.log("EditingFinished")
+        sofaData.value = text
+        root.focus = false
     }
 }

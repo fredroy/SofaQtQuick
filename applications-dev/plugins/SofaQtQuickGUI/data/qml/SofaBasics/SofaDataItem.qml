@@ -28,7 +28,7 @@ Item {
     id: self
 
     implicitWidth: gridlayout.implicitWidth
-    implicitHeight: gridlayout.implicitHeight
+    implicitHeight: dataWidget.implicitHeight
 
     signal doubleClickedOnLabel;
 
@@ -48,14 +48,16 @@ Item {
     function updateData(newValue)
     {
         console.log("Update Data " + sofaData.name);
-        sofaData.setValue(newValue);
+        sofaData.value = newValue;
     }
 
     function updateLink()
     {
-        console.log("Update Link" + sofaData.name)
+        console.log("Update Link " + sofaData.name + " with value: " + linkTextField.text)
 
         sofaData.setLink(linkTextField.visible ? linkTextField.text : "");
+        linkTextField.borderColor = Qt.binding(function (){return (0 === sofaData.linkPath.length) ? "red" : "#393939"})
+        sofaData.value = sofaData.value
     }
 
     GridLayout {
@@ -72,7 +74,7 @@ Item {
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignTop
             visible: self.showName
-            text: sofaData? sofaData.name : ""
+            text: sofaData ? sofaData.name : ""
             font.italic: true
             color: "black"
             width: parent.width
@@ -87,7 +89,7 @@ Item {
             }
             ToolTip {
                 text: sofaData? sofaData.name : ""
-                description: sofaData? sofaData.help : ""
+                description: sofaData ? sofaData.help : ""
                 visible: dataLabelMouseArea.containsMouse
             }
 
@@ -100,6 +102,7 @@ Item {
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignTop
             Layout.minimumWidth: 100
+
             RowLayout {
                 Layout.fillWidth: true
                 visible: sofaData && 0 !== sofaData.name.length && (linkButton.checked || (0 !== sofaData.linkPath.length && !self.showLinkButton))
@@ -109,17 +112,12 @@ Item {
                     id: linkTextField
                     Layout.fillWidth: true
                     placeholderText: sofaData ? "Link: @./path/component." + sofaData.name : ""
-                    color: 0 === sofaData.linkpathlength ? "black" : "green"
-                    text: sofaData? sofaData.linkPath : ""
+                    placeholderTextColor: "gray"
+                    text: sofaData ? sofaData.linkPath : ""
                     width: parent.width
                     clip: true
-                    onTextChanged: updateLink();
-                }
-
-                Image {
-                    Layout.preferredWidth: 16
-                    Layout.preferredHeight: Layout.preferredWidth
-                    source: 0 === sofaData.linkPath.length ? "qrc:/icon/invalid.png" : "qrc:/icon/correct.png"
+                    onEditingFinished: updateLink();
+                    borderColor: 0 === sofaData.linkPath.length ? "red" : "#393939"
                 }
             }
         }
@@ -136,13 +134,14 @@ Item {
                 anchors.margins: 3
                 checkable: true
                 checked: sofaData ? 0 !== sofaData.linkPath.length : false
-
+                activeFocusOnTab: false
                 ToolTip {
                     text: "Link the data to another one."
                 }
 
-                onClicked: updateLink()
-
+                onClicked: {
+                    updateLink()
+                }
                 Image {
                     anchors.fill: parent
                     source: "qrc:/icon/link.png"
@@ -176,13 +175,12 @@ Item {
     {
         if(sofaData)
         {
-            console.log("creating widget for data field: " + sofaData.name)
             /// Returns the widget's properties associated with this SofaData
             var component = SofaDataWidgetFactory.getWidgetForData(sofaData)
-            var o = component.createObject(datawidget,
-                                               {"sofaData": sofaData,
+            var o = component.createObject(datawidget, {"sofaData": sofaData,
                                                 "Layout.fillWidth":true})
-            o.refreshCounter = Qt.binding(function(){return refreshCounter})
+            self.implicitHeight = Qt.binding(function(){ return o.implicitHeight < 20 ? 20 : o.implicitHeight })
+            o.visible = Qt.binding(function() { return !linkButton.checked })
         }
     }
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "SofaQtQuickGUI/Bindings/SofaNode.h"
 #include <SofaSimulationGraph/DAGNode.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 
+#include "SofaQtQuickGUI/Bindings/SofaNode.h"
 using sofa::core::objectmodel::BaseObject;
 
 #include <QUrl>
@@ -31,13 +31,14 @@ class Asset : public QObject
 
 
     Q_INVOKABLE virtual void getDetails() = 0; // Loads the asset
-    Q_INVOKABLE virtual sofaqtquick::bindings::SofaNode* create(const QString& assetName = "") = 0; // instantiates the asset
+    Q_INVOKABLE virtual sofaqtquick::bindings::SofaNode* create(sofaqtquick::bindings::SofaNode* parent, const QString& assetName = "") = 0; // instantiates the asset
     Q_INVOKABLE virtual QUrl getAssetInspectorWidget();
 
     Q_PROPERTY(QString typeString READ getTypeString NOTIFY typeStringChanged)
     Q_PROPERTY(QUrl iconPath READ getIconPath NOTIFY iconPathChanged)
     Q_PROPERTY(bool isSofaContent READ getIsSofaContent NOTIFY isSofaContentChanged)
     Q_PROPERTY(QString path READ path NOTIFY pathChanged)
+    Q_PROPERTY(bool isScene READ isScene NOTIFY isSceneChanged)
 
   protected:
     Q_INVOKABLE virtual QString getTypeString() { return "Unknown file format"; }
@@ -45,11 +46,13 @@ class Asset : public QObject
     Q_INVOKABLE virtual bool getIsSofaContent() { return false; }
 
     Q_INVOKABLE QString path() { return QString(m_path.c_str()); }
+    virtual bool isScene() { return false; }
 
     Q_SIGNAL void typeStringChanged(const QUrl& type);
     Q_SIGNAL void iconPathChanged(const QUrl& path);
     Q_SIGNAL void pathChanged(const QString& type);
     Q_SIGNAL void isSofaContentChanged(bool val);
+    Q_SIGNAL void isSceneChanged(bool);
 
 
     typedef std::map<std::string, BaseAssetLoader *> LoaderMap;

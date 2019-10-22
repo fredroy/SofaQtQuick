@@ -14,11 +14,14 @@ import TextureAsset 1.0
 import MeshAsset 1.0
 
 Item {
-
     property var sofaApplication: null
+    property bool isDebugPrintEnabled: self.project.isDebugPrintEnabled
+
+    onIsDebugPrintEnabledChanged: {
+        self.project.isDebugPrintEnabled =  isDebugPrintEnabled
+    }
 
     id: root
-
     anchors.fill : parent
 
     Item {
@@ -33,7 +36,7 @@ Item {
     }
 
     ColumnLayout {
-        anchors.fill: parent
+        anchors.fill: root.parent
         Rectangle {
             id: headerID
             Layout.fillWidth: true
@@ -68,8 +71,8 @@ Item {
         ScrollView {
             id: scrollview
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            width: root.parent.width
+            height: root.parent.height - 42
             ProjectViewMenu {
                 id: generalProjectMenu
                 filePath: folderModel.folder.toString().replace("file://", "")
@@ -88,8 +91,10 @@ Item {
             }
             ListView {
                 id: folderView
-                height: contentHeight
-                width: parent.width
+                anchors.fill: parent
+                Layout.fillWidth: true
+                Layout.preferredHeight: contentHeight
+                clip: true
 
                 header: RowLayout{
                     implicitWidth: folderView.width
@@ -283,17 +288,17 @@ Item {
                             }
 
                             function insertAsset(index, rootNode)
-                            {                                    
-                                var newNode = self.project.getAsset(folderModel.get(index, "filePath")).create()
+                            {
                                 var _parent = sofaScene.selectedComponent
                                 if (_parent === null) { console.error("taking root node"); _parent = sofaScene.root()}
                                 if (!_parent.isNode()) { console.error("taking object's parent"); _parent = _parent.getFirstParent()}
 
+                                var newNode = self.project.getAsset(folderModel.get(index, "filePath")).create(_parent)
                                 var hasNodes = newNode.getChildren().size()
                                 console.error("ParentNode type: " + _parent)
                                 console.error("newNode type: " + newNode)
                                 _parent.dump()
-                                newNode.copyTo(_parent)
+//                                newNode.copyTo(_parent)
                                 console.error("bah shit")
                                 if (hasNodes) {
                                     var childsList = _parent.getChildren()
@@ -341,16 +346,11 @@ Item {
                                     draggedData.asset = wrapper.asset
                             }
 
-                            Item {
+                            DraggableAssetItem {
                                 id: draggedData
+
+                                origin: "ProjectView"
                                 Drag.active: !fileIsDir ? mouseRegion.drag.active : false
-                                Drag.dragType: Drag.Automatic
-                                Drag.supportedActions: Qt.CopyAction
-                                Drag.mimeData: {
-                                    "text/plain": "Copied text"
-                                }
-                                property string origin: "ProjectView"
-                                property Asset asset
                             }
                         }
                     }
@@ -362,6 +362,4 @@ Item {
             }
         }
     }
-
-
 }

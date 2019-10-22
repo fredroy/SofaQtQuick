@@ -30,9 +30,11 @@ ColumnLayout {
     property SofaData sofaData: null
     property int refreshCounter: 0
 
+    Layout.fillHeight: true
     Label {
+        id: lbl
         Layout.fillWidth: true
-        text: "Data widget not implemented yet: " + sofaData.properties.type + " - using text edit"
+        text: "Data widget not implemented yet: " + sofaData.properties.type
         wrapMode: Text.Wrap
     }
 

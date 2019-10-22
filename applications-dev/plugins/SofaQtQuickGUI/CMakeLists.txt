@@ -34,6 +34,9 @@ set(SOURCE_FILES
     src/SofaQtQuickGUI/SelectableSofaParticle.cpp
     src/SofaQtQuickGUI/Console.cpp
     src/SofaQtQuickGUI/SofaParticleInteractor.cpp
+    src/SofaQtQuickGUI/SyntaxHighlight/QSyntaxHighlighterPython.cpp
+    src/SofaQtQuickGUI/SyntaxHighlight/QSyntaxHighlighterCpp.cpp
+    src/SofaQtQuickGUI/SyntaxHighlight/HighlightComponent.cpp
     src/SofaQtQuickGUI/Bindings/SofaFactory.cpp
     src/SofaQtQuickGUI/Bindings/SofaCamera.cpp
     src/SofaQtQuickGUI/Bindings/SofaComponent.cpp
@@ -59,6 +62,7 @@ set(SOURCE_FILES
     src/SofaQtQuickGUI/Models/SofaSceneItemModel.cpp
     src/SofaQtQuickGUI/Models/SofaSceneItemProxy.cpp
     src/SofaQtQuickGUI/Models/SofaViewListModel.cpp
+    src/SofaQtQuickGUI/Models/SofaDataContainerListModel.cpp
     src/SofaQtQuickGUI/Modules/SofaRuntime/SofaRuntimeModule.cpp
     src/SofaQtQuickGUI/QMLUI/QMLUI.cpp
     src/SofaQtQuickGUI/QMLUI/View.cpp
@@ -68,8 +72,10 @@ set(SOURCE_FILES
     src/SofaQtQuickGUI/LiveQMLFileMonitor.cpp
     src/SofaQtQuickGUI/SofaProject.cpp
     src/SofaQtQuickGUI/Assets/Asset.cpp
+    src/SofaQtQuickGUI/Assets/DirectoryAsset.cpp
     src/SofaQtQuickGUI/Assets/MeshAsset.cpp
     src/SofaQtQuickGUI/Assets/PythonAsset.cpp
+    src/SofaQtQuickGUI/Assets/SceneAsset.cpp
     src/SofaQtQuickGUI/Assets/TextureAsset.cpp
     src/SofaQtQuickGUI/Assets/AssetFactory.cpp
     )
@@ -108,6 +114,9 @@ set(HEADER_FILES
     src/SofaQtQuickGUI/Console.h
     src/SofaQtQuickGUI/PythonConsole.h
     src/SofaQtQuickGUI/SofaParticleInteractor.h
+    src/SofaQtQuickGUI/SyntaxHighlight/QSyntaxHighlighterPython.h
+    src/SofaQtQuickGUI/SyntaxHighlight/QSyntaxHighlighterCpp.h
+    src/SofaQtQuickGUI/SyntaxHighlight/HighlightComponent.h
     src/SofaQtQuickGUI/Bindings/SofaFactory.h
     src/SofaQtQuickGUI/Bindings/SofaComponent.h
     src/SofaQtQuickGUI/Bindings/SofaCamera.h
@@ -131,6 +140,7 @@ set(HEADER_FILES
     src/SofaQtQuickGUI/Models/SofaSceneItemModel.h
     src/SofaQtQuickGUI/Models/SofaSceneItemProxy.h
     src/SofaQtQuickGUI/Models/SofaViewListModel.h
+    src/SofaQtQuickGUI/Models/SofaDataContainerListModel.h
     src/SofaQtQuickGUI/Modules/SofaRuntime/SofaRuntimeModule.h
     src/SofaQtQuickGUI/QMLUI/QMLUI.h
     src/SofaQtQuickGUI/QMLUI/View.h
@@ -143,9 +153,11 @@ set(HEADER_FILES
     src/SofaQtQuickGUI/LiveQMLFileMonitor.h
     src/SofaQtQuickGUI/SofaProject.h
     src/SofaQtQuickGUI/Assets/Asset.h
+    src/SofaQtQuickGUI/Assets/DirectoryAsset.h
     src/SofaQtQuickGUI/Assets/MeshAsset.h
     src/SofaQtQuickGUI/Assets/PythonAsset.h
     src/SofaQtQuickGUI/Assets/TextureAsset.h
+    src/SofaQtQuickGUI/Assets/SceneAsset.h
     src/SofaQtQuickGUI/Assets/AssetFactory.h
     src/SofaQtQuickGUI/Assets/AssetFactory.inl
     )

@@ -22,7 +22,8 @@ import QtQuick.Controls 2.4
 import QtQuick.Dialogs 1.0
 import QtQuick.Layouts 1.0
 import SofaBasics 1.0
-
+import Sofa.Core.SofaData 1.0
+import SofaApplication 1.0
 
 /***************************************************************************************************
   *
@@ -37,18 +38,17 @@ Row {
     spacing : -1
     width: parent.width
 
-    property var dataObject: null
+    property SofaData sofaData
 
     TextField {
         id: textField
         enabled: true
         width: root.width - openButton.width - root.spacing
-        text: undefined !== dataObject.value ? dataObject.value.toString() : ""
+        text: sofaData.value.toString()
 
         onAccepted: {
             /// Get the URL from the file chooser and convert it to a string.
             dataObject.value = textField.text ;
-            dataObject.upload();
         }
         position: cornerPositions["Left"]
 
@@ -82,21 +82,28 @@ Row {
         }
         onClicked: {
             /// Open the FileDialog at the specified location.
-            fileDialog.folder =  "file://"+dataObject.properties.folderurl
+            var url = "";
+            if( sofaData.properties.folderurl !== ""){
+                url = "file://"+sofaData.properties.folderurl
+            }else{
+                url = SofaApplication.currentProject.rootDir
+            }
+
+            fileDialog.folder = url
             fileDialog.open()
         }
         position: cornerPositions["Right"]
     }
 
+
     FileDialog {
         id: fileDialog
         title: "Please choose a file"
-        folder: "file://"+dataObject.properties.folderurl
+        folder: "file://"+sofaData.properties.folderurl
         onAccepted: {
             /// Get the URL from the file chooser and convert it to a string.
-            dataObject.value = fileDialog.fileUrl.toString().replace("file://","") ;
-            dataObject.upload();
-            textField.text = dataObject.value.toString();
+            sofaData.value = fileDialog.fileUrl.toString().replace("file://","") ;
+            textField.text = sofaData.value.toString();
         }
     }
 

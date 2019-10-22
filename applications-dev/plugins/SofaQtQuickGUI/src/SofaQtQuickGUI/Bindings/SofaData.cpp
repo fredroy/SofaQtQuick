@@ -51,7 +51,10 @@ QVariant SofaData::getValue() const
 bool SofaData::setValue(const QVariant& value)
 {
     if(sofaqtquick::helper::setDataValueFromQVariant(m_self, value))
+    {
+        m_self->setPersistent(true);
         return true;
+    }
     return false;
 }
 
@@ -126,7 +129,7 @@ bool SofaData::setLink(const QString& path)
 
 QString SofaData::getHelp() const
 {
-    return rawData()->getHelp();
+    return QString::fromStdString(rawData()->getHelp());
 
 }
 
@@ -142,7 +145,7 @@ bool SofaData::isReadOnly() const
 
 QString SofaData::getGroup() const
 {
-    return rawData()->getGroup();
+    return QString::fromStdString(rawData()->getGroup());
 }
 
 } /// namespace sofaqtquick::bindings

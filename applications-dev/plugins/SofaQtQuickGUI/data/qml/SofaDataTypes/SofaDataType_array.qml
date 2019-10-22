@@ -21,12 +21,16 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.0
 import QtQuick.Controls 1.4 as QQC1
 import SofaBasics 1.0
+import Sofa.Core.SofaData 1.0
+import SofaApplication 1.0
+import SofaColorScheme 1.0
+import SofaDataContainerListModel 1.0
 
 ColumnLayout {
     id: root
     spacing: 0
 
-    property var sofaData: null
+    property SofaData sofaData: null
     property var properties: sofaData.properties
     property int refreshCounter: 0
 
@@ -34,26 +38,36 @@ ColumnLayout {
         id: loader
         Layout.fillWidth: true
         Layout.fillHeight: true
-
+        Layout.minimumHeight: item.height
         sourceComponent: {
+            console.log(sofaData.name)
             if(properties.static) {
                 if((!properties.innerStatic && sofaData.value.length <= 7) ||
-                   (properties.innerStatic && 1 === sofaData.value.length && properties.cols <= 7))
+                   (properties.innerStatic && 1 === sofaData.value.length && properties.cols <= 7)) {
+                    console.log ("staticSmallArrayView")
                     return staticSmallArrayView;
-                else if(properties.innerStatic && properties.cols <= 7)
+                } else if(properties.innerStatic && properties.cols <= 7) {
+                    console.log ("staticInStaticTableView")
                     return staticInStaticTableView;
-                else
+                } else {
+                    console.log ("staticArrayView")
                     return staticArrayView;
+                }
             }
             else {
                 if(properties.innerStatic) {
-                    if(properties.cols <= 7 || properties.cols === 12) // Case of Affine type
+                    if(properties.cols <= 7 || properties.cols === 12) {
+                        // Case of Affine type
+                        console.log("staticInDynamicTableView")
                         return staticInDynamicTableView;
-                    else
+                    } else {
+                        console.log("dynamicArrayView")
                         return dynamicArrayView;
+                    }
                 }
             }
 
+            console.log("dynamicArrayView")
             return dynamicArrayView;
         }
 
@@ -62,106 +76,127 @@ ColumnLayout {
             QQC1.TableView {
                 id: tableView
 
+                rowDelegate: Rectangle {
+                    color: styleData.selected ? "#82878c" : styleData.alternate ? SofaApplication.style.alternateBackgroundColor : SofaApplication.style.contentBackgroundColor
+                }
+                headerDelegate: GBRect {
+                    color: "#757575"
+                    border.width: 1
+                    border.color: "#393939"
+                    height: 20
+                    width: textItem.implicitWidth
+                    Text {
+                        id: textItem
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: styleData.textAlignment
+                        anchors.leftMargin: 12
+                        text: { console.log("Values: " + styleData.value + " " + styleData.row + " " + styleData.column); return styleData.value }
+                        elide: Text.ElideRight
+                        renderType: Text.NativeRendering
+                    }
+                }
                 Component {
                     id: columnComponent
                     QQC1.TableViewColumn {
                         movable: false
-                        resizable: false
+                        resizable: true
                         horizontalAlignment: Text.AlignHCenter
                         width: (tableView.width - 58) / (tableView.columnCount - 1)
+                        Component.onCompleted: {
+                            resizeToContents()
+                        }
                     }
                 }
+
 
                 Component {
                     id: columnLines
                     QQC1.TableViewColumn {
                         movable: false
-                        resizable: false
+                        resizable: true
                         horizontalAlignment: Text.AlignHCenter
                         width: 58
-                    }
-                }
-
-                Component.onCompleted: {
-                    addColumn(columnLines.createObject(tableView, {"title": "", "role": "printLinesNumber"}));
-                    for(var i = 0; i < properties.cols; ++i)
-                        addColumn(columnComponent.createObject(tableView, {"title": i.toString(), "role": "c" + i.toString()}));
-                }
-
-                Connections {
-                    target: root.sofaData
-                    onValueChanged: {
-                        listModel.update();
-
-                        sofaData.modified = false;
-                    }
-                }
-
-                model: ListModel {
-                    id: listModel
-
-                    Component.onCompleted: populate();
-
-                    property int previousCount: 0
-
-                    function populate() {
-                        var newCount = sofaData.value.length;
-                        if(previousCount < newCount)
-                            for(var j = previousCount; j < newCount; ++j) {
-                                var values = {};
-                                for(var i = previousCount; i < properties.cols; ++i)
-                                    values["c" + i.toString()] = sofaData.value[j][i];
-
-                                append(values);
-                            }
-                        else if(previousCount > newCount)
-                            remove(newCount, previousCount - newCount);
-
-                        previousCount = count;
-                    }
-
-                    function update() {
-                        if(count !== sofaData.value.length)
-                            populate();
-
-                        for(var j = 0; j < count; ++j) {
-                            var values = {};
-                            for(var i = previousCount; i < properties.cols; ++i)
-                                values["c" + i.toString()] = sofaData.value[j][i];
-
-                            set(j, values);
+                        Component.onCompleted: {
+                            resizeToContents()
                         }
                     }
                 }
 
-                function populate() {
-                    listModel.populate();
+
+                model: SofaDataContainerListModel {
+                    id: listModel
+                    sofaData: root.sofaData
+                    Component.onCompleted: {
+                        addColumn(columnLines.createObject(tableView, { "title": "", "role": 0}));
+                        for (var i = 0 ; i < sofaData.properties.cols ; i++)
+                            addColumn(columnComponent.createObject(tableView, { "id": ""+i, "title": headerData(i, Qt.Horizontal, ""), "role": i}));
+                    }
                 }
 
-                function update() {
-                    listModel.update();
-                }
+//                itemDelegate: TextInput {
+//                    anchors.fill: parent
+//                    text: listModel.data(listModel.index(styleData.row, 0), styleData.column)
+//                    readOnly: true
+//                }
 
-                itemDelegate: TextInput {
+                itemDelegate: TextField {
+                    id: cell
+
+                    Component {
+                        id: bgComponent
+                        Rectangle{ color: "transparent" }
+                    }
+
                     anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 6
+                    anchors.leftMargin: -1
+                    anchors.rightMargin: -1
                     clip: true
-                    readOnly: -1 === styleData.row || sofaData.readOnly || 0 === styleData.column
+                    readOnly: sofaData.isReadOnly || styleData.column === 0
                     color: styleData.textColor
                     horizontalAlignment: TextEdit.AlignHCenter
-                    text: {
+                    verticalAlignment: TextEdit.AlignVCenter
+                    validator: DoubleValidator {}
+                    function getText() {
                         if (styleData.column === 0)
-                            return styleData.row;
+                            cell.text = styleData.row;
                         else if(-1 !== styleData.row && styleData.column !== 0) {
-                            return sofaData.value[styleData.row][styleData.column - 1];
+                            cell.text = Number(listModel.data(listModel.index(styleData.row, 0), styleData.column)).toPrecision(6);
                         }
-
-                        return "";
+                        else {
+                            cell.text = "#REF!" // Hum... maybe a better "invalid cell" convention than ms excel....?
+                        }
+                        return cell.text
                     }
+                    text: getText()
                     property int previousRow: -1
-                    onTextChanged: {
-                        if(-1 === styleData.row || sofaData.readOnly || 0 === styleData.column)
+                    position: cornerPositions['Middle']
+
+                    MouseArea {
+                        id: mouseArea
+                        anchors.fill: parent
+                        acceptedButtons: cell.readOnly ? Qt.NoButton : Qt.LeftButton
+                        onClicked: {
+                            parent.forceActiveFocus()
+                        }
+                    }
+                    activeFocusOnTab: styleData.column !== 0 ? true : false
+                    onActiveFocusChanged: {
+                        if (!cell.readOnly) {
+                            if (activeFocus) {
+                                text = listModel.data(listModel.index(styleData.row, 0), styleData.column)
+                                mouseArea.cursorShape = Qt.IBeamCursor
+                                background.color = "#82878c"
+                            } else {
+                                mouseArea.cursorShape = Qt.ArrowCursor
+                                background.color = "transparent"
+                                text = getText()
+                            }
+                        }
+                    }
+
+                    onEditingFinished: {
+                        if(-1 === styleData.row || sofaData.isReadOnly || 0 === styleData.column)
                             return;
 
                         if(previousRow !== styleData.row) {
@@ -170,14 +205,16 @@ ColumnLayout {
                         }
 
                         if(styleData.column !== 0) {
-                            var oldValue = sofaData.value[styleData.row][styleData.column - 1];
-
+                            var oldValue = listModel.data(listModel.index(styleData.row, 0), styleData.column);
                             var value = text;
                             if(value !== oldValue) {
-                                sofaData.value[styleData.row][styleData.column - 1] = value;
-                                sofaData.modified = true;
+                                listModel.setData(listModel.index(styleData.row, 0), text, styleData.column)
                             }
                         }
+                        text = getText()
+                    }
+                    Component.onCompleted: {
+                        if (0 === styleData.column) cell.background = bgComponent.createObject(cell)
                     }
                 }
             }
@@ -187,7 +224,7 @@ ColumnLayout {
             id: staticSmallArrayView
             RowLayout {
                 id: rowLayout
-                //width: parent.width
+                Layout.preferredWidth: (parent.width - 1) / sofaData.value.length + 1
                 spacing: -1
                 enabled: !sofaData.readOnly
 
@@ -208,7 +245,7 @@ ColumnLayout {
                     for(var i = 0; i < values.length; ++i)
                     {
                         fields[i] = textFieldComponent.createObject(rowLayout, {index: i});
-                        if (i == 0)
+                        if (i === 0)
                             fields[i].position = fields[i].cornerPositions['Left']
                         else if (i === values.length -1)
                             fields[i].position = fields[i].cornerPositions['Right']
@@ -224,28 +261,36 @@ ColumnLayout {
                         values = sofaData.value[0];
 
                     for(var i = 0; i < values.length; ++i) {
-                        fields[i].text = values[i].toString();
+                        fields[i].value = values[i];
                     }
                 }
 
                 Component {
                     id: textFieldComponent
 
-                    TextField {
-                        Layout.fillWidth: true
+                    SpinBox {
+                        Layout.preferredWidth: (parent.width- 1) / (rowLayout.innerArray ? sofaData.value[0].length : sofaData.value.length) + 1
                         Layout.fillHeight: true
                         Layout.alignment: Qt.AlignTop
-                        readOnly: sofaData & sofaData.readOnly
                         enabled: !sofaData.readOnlyTableViewColumn
                         position: cornerPositions['Middle']
+                        showIndicators: false
+
 
                         property int index
-                        onEditingFinished: {
-                            if(rowLayout.innerArray)
-                                sofaData.value[0][index] = text;
-                            else
-                                sofaData.value[index] = text;
 
+                        value: sofaData.value[0][index]
+                        onValueChanged: {
+                            if(rowLayout.innerArray) {
+                                var val = sofaData.value
+                                val[0][index] = value
+                                sofaData.value = val;
+                            }
+                            else {
+                                val = sofaData.value
+                                val[index] = value
+                                sofaData.value = val;
+                            }
                             sofaData.modified = true;
                         }
                     }
@@ -262,9 +307,9 @@ ColumnLayout {
             id: staticArrayView
             TextField {
                 id: textField
-                readOnly: sofaData.readOnly
-                enabled: !sofaData.readOnly
-                text: undefined !== sofaData.value ? sofaData.value.toString() : ""
+                readOnly: root.sofaData.isReadOnly
+                enabled: !root.sofaData.isReadOnly
+                text: undefined !== root.sofaData.value ? root.sofaData.value.toString() : ""
                 Binding {
                     target: root.sofaData
                     property: "value"
@@ -288,29 +333,26 @@ ColumnLayout {
                     }
                     SpinBox {
                         id: rowNumber
-                        editable: !sofaData.readOnly && showEditButton.checked
+                        enabled: !root.sofaData.readOnly && showEditButton.checked
                         Layout.fillWidth: true
-                        value: sofaData.value.length
+                        value: root.sofaData.value.length
                         onValueChanged : {
-                            if(value === sofaData.value.length)
+                            if(value === root.sofaData.value.length)
                                 return;
 
-                            var oldLength = sofaData.value.length;
-                            sofaData.value.length = value;
-                            for(var j = oldLength; j < sofaData.value.length; ++j) {
-                                sofaData.value[j] = [];
+                            var oldLength = root.sofaData.value.length;
+                            root.sofaData.value.length = value;
+                            for(var j = oldLength; j < root.sofaData.value.length; ++j) {
+                                root.sofaData.value[j] = [];
                                 for(var i = 0; i < properties.cols; ++i)
-                                    sofaData.value[j][i] = 0;
+                                    root.sofaData.value[j][i] = 0;
                             }
 
-                            sofaData.modified = true;
+                            root.sofaData.modified = true;
 
                             if(loader.item)
                                 loader.item.populate();
                         }
-
-                        from : 0
-                        to : Number.MAX_VALUE
                         position: cornerPositions["Left"]
                     }
                     Button {
@@ -318,17 +360,39 @@ ColumnLayout {
                         text: "Edit"
                         checkable: true
                         position: cornerPositions["Right"]
+                        enabled: rowNumber.value !== 0
                     }
                 }
 
                 Loader {
-                    id: loader
+                    id: loader2
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     visible: showEditButton.checked
+                    onVisibleChanged: {
+                        if (visible) {
+                            Layout.minimumHeight = 200
+                            loader.Layout.minimumHeight = 224
+                            root.Layout.minimumHeight = 224
+                            parent.Layout.minimumHeight = 220
+                        } else {
+                            Layout.minimumHeight = 20
+                            loader.Layout.minimumHeight = 20
+                            root.Layout.minimumHeight = 20
+                            parent.Layout.minimumHeight = 20
+                        }
+                    }
+
                     active: visible
+
                     sourceComponent: staticInStaticTableView
                 }
+                Rectangle {
+                    visible: loader2.visible
+                    color: "transparent"
+                    implicitHeight: 1
+                }
+
             }
         }
 

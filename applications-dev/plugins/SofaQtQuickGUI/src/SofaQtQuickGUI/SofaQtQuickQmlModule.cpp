@@ -56,6 +56,7 @@ using sofaqtquick::bindings::SofaBaseObject;
 #include <SofaQtQuickGUI/Models/SofaSceneItemProxy.h>
 #include <SofaQtQuickGUI/Models/SofaDataListModel.h>
 #include <SofaQtQuickGUI/Models/SofaViewListModel.h>
+#include <SofaQtQuickGUI/Models/SofaDataContainerListModel.h>
 #include <SofaQtQuickGUI/Models/SofaInspectorDataListModel.h>
 #include <SofaQtQuickGUI/Models/SofaDisplayFlagsTreeModel.h>
 #include <SofaQtQuickGUI/Windows/CameraView.h>
@@ -89,6 +90,9 @@ using sofaqtquick::bindings::SofaFactory;
 
 #include <SofaQtQuickGUI/LiveQMLFileMonitor.h>
 using sofa::qtquick::LiveQMLFileMonitor;
+
+#include <SofaQtQuickGUI/SyntaxHighlight/HighlightComponent.h>
+using sofa::qtquick::HighlightComponent;
 
 #include <sofa/helper/system/PluginManager.h>
 
@@ -191,6 +195,7 @@ void registerSofaTypesToQml(const char* /*uri*/)
     qmlRegisterType<SofaSceneItemModel>                             ("SofaSceneItemModel"                   , versionMajor, versionMinor, "SofaSceneItemModel");
     qmlRegisterType<SofaSceneItemProxy>                             ("SofaSceneItemProxy"                   , versionMajor, versionMinor, "SofaSceneItemProxy");
     qmlRegisterType<SofaDataListModel>                              ("SofaDataListModel"                    , versionMajor, versionMinor, "SofaDataListModel");
+    qmlRegisterType<SofaDataContainerListModel>                     ("SofaDataContainerListModel"           , versionMajor, versionMinor, "SofaDataContainerListModel");
     qmlRegisterType<SofaInspectorDataListModel>                     ("SofaInspectorDataListModel"           , versionMajor, versionMinor, "SofaInspectorDataListModel");
     qmlRegisterType<SofaDisplayFlagsTreeModel>                      ("SofaDisplayFlagsTreeModel"            , versionMajor, versionMinor, "SofaDisplayFlagsTreeModel");
     qmlRegisterType<SofaViewer>                                     ("SofaViewer"                           , versionMajor, versionMinor, "SofaViewer");
@@ -202,6 +207,7 @@ void registerSofaTypesToQml(const char* /*uri*/)
     qmlRegisterUncreatableType<Asset>                               ("Asset"                                , versionMajor, versionMinor, "Asset", QString("It is not possible to create an Asset"));
     qmlRegisterType<PythonAsset>                                    ("PythonAsset"                          , versionMajor, versionMinor, "PythonAsset");
     qmlRegisterType<PythonAssetModel>                               ("PythonAssetModel"                     , versionMajor, versionMinor, "PythonAssetModel");
+    qmlRegisterType<HighlightComponent>                             ("HighlightComponent"                   , versionMajor, versionMinor, "HighlightComponent");
     qmlRegisterUncreatableType<MeshAsset>                           ("MeshAsset"                            , versionMajor, versionMinor, "MeshAsset", QString("It is not possible to create a MeshAsset"));
     qmlRegisterUncreatableType<TextureAsset>                        ("TextureAsset"                         , versionMajor, versionMinor, "TextureAsset", QString("It is not possible to create a TextureAsset"));
 
@@ -258,6 +264,7 @@ void registerSofaTypesToQml(const char* /*uri*/)
     {
         return SofaNode::createFrom(obj);
     });
+
 }
 
 void SofaQtQuickQmlModule::RegisterTypes(QQmlEngine* engine)
